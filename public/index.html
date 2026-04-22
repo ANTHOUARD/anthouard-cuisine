@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collection Anthouard — Cuisine IA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --red: #9b2335; --darkred: #7a1c28; --redlight: #c0392b;
+  --bg: #1a1a1a; --bg2: #242424; --bg3: #2e2e2e;
+  --border: #3a3a3a; --border2: #444;
+  --text: #f0ede8; --text2: #aaa; --text3: #666;
+  --green: #4caf50; --darkgreen: #1a6a1a; --bggreen: #e8f5e9;
+  --blue: #4a7acf; --bgblue: #ebf3fb;
+  --orange: #fff8e1;
+  --lgray: #f5f5f5;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: Arial, Helvetica, sans-serif; font-size: 13px; min-height: 100vh; }
+
+/* ── LOGIN ── */
+#login-screen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+.login-box {
+  width: 420px; padding: 48px 40px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-top: 4px solid var(--red);
+}
+.login-logo { font-size: 11px; font-weight: bold; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text2); margin-bottom: 6px; }
+.login-title { font-size: 26px; font-weight: bold; color: #fff; margin-bottom: 4px; }
+.login-sub { font-size: 12px; color: var(--text3); margin-bottom: 32px; }
+.login-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); margin-bottom: 6px; display: block; }
+.login-input {
+  width: 100%; padding: 12px 14px; background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); font-family: Arial, sans-serif; font-size: 14px; letter-spacing: 0.15em;
+  text-transform: uppercase; outline: none; margin-bottom: 16px;
+}
+.login-input:focus { border-color: var(--red); }
+.login-btn {
+  width: 100%; padding: 13px; background: var(--red); border: none; color: #fff;
+  font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; letter-spacing: 0.1em;
+  text-transform: uppercase; cursor: pointer; transition: background 0.15s;
+}
+.login-btn:hover { background: var(--redlight); }
+.login-err { font-size: 11px; color: #e74c3c; margin-top: 10px; text-align: center; display: none; }
+
+/* ── APP ── */
+#app { display: none; }
+.header {
+  padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+  background: #111; border-bottom: 3px solid var(--red); position: sticky; top: 0; z-index: 100;
+}
+.logo { font-size: 14px; font-weight: bold; color: #fff; }
+.logo span { color: var(--red); }
+.logo-sub { font-size: 10px; color: var(--text3); margin-top: 1px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.user-badge { font-size: 10px; font-weight: bold; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+.btn-logout { padding: 5px 10px; background: none; border: 1px solid var(--border2); color: var(--text3); font-size: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-family: Arial, sans-serif; }
+.btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+.inner { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ── STEPS ── */
+.step-nav { display: flex; border: 1px solid var(--border); margin: 28px 0 36px; }
+.snav { flex: 1; padding: 11px 8px; background: var(--bg2); border: none; border-right: 1px solid var(--border); color: var(--text3); font-family: Arial, sans-serif; font-size: 10px; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.snav:last-child { border-right: none; }
+.snav.active { background: var(--red); color: #fff; }
+.snav.done { color: var(--green); background: #1a2a1a; }
+.snav:hover:not(.active):not(.done) { background: var(--bg3); }
+.snav:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.sec-title { font-size: 20px; font-weight: bold; color: #fff; margin-bottom: 4px; }
+.sec-sub { font-size: 11px; color: var(--text3); margin-bottom: 24px; }
+
+/* ── FORM ── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.fgroup { margin-bottom: 4px; }
+.fgroup label { display: block; font-size: 10px; font-weight: bold; color: var(--text2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+.finput, .fselect { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); font-family: Arial, sans-serif; font-size: 13px; padding: 9px 11px; outline: none; }
+.finput:focus, .fselect:focus { border-color: var(--red); }
+.fselect option { background: var(--bg2); }
+.hint { font-size: 10px; color: var(--text3); margin-top: 4px; line-height: 1.4; }
+.chips-label { font-size: 10px; font-weight: bold; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.chip { padding: 6px 14px; border: 1px solid var(--border); font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; color: var(--text3); cursor: pointer; background: var(--bg2); transition: all 0.15s; }
+.chip.on { border-color: var(--red); color: #fff; background: var(--red); }
+
+/* ── BUTTONS ── */
+.btn-red { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; background: var(--red); border: none; color: #fff; font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: background 0.15s; }
+.btn-red:hover { background: var(--redlight); }
+.btn-red:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-outline { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; background: none; border: 1px solid var(--border2); color: #bbb; font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.btn-outline:hover { background: var(--bg3); border-color: #666; }
+.btn-green { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; background: #1a4a1a; border: 1px solid var(--green); color: var(--green); font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.btn-green:hover { background: #1e6a1e; }
+.btn-blue { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; background: #1a2a4a; border: 1px solid var(--blue); color: #7aacff; font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.btn-blue:hover { background: #1e3a6a; }
+
+/* ── LOADER ── */
+.loader { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 60px 0; }
+.lbar { width: 220px; height: 3px; background: var(--bg3); position: relative; overflow: hidden; }
+.lbar::after { content:''; position:absolute; top:0; left:-60%; width:60%; height:100%; background:var(--red); animation: lslide 1.3s ease-in-out infinite; }
+@keyframes lslide { 0%{left:-60%} 100%{left:110%} }
+.ltxt { font-size: 12px; color: var(--text3); }
+
+/* ── CARTE ── */
+.mode-bar { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+.mode-label { font-size: 11px; color: var(--text3); font-weight: bold; text-transform: uppercase; margin-right: 4px; }
+.cat-section { margin-bottom: 28px; }
+.cat-title { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #fff; padding: 8px 12px; background: var(--red); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width:700px){ .cards-row { grid-template-columns: 1fr; } .grid2 { grid-template-columns: 1fr; } }
+
+.pcard { background: var(--bg2); padding: 18px; border: 1px solid var(--border); transition: border-color 0.15s; position: relative; }
+.pcard:hover { border-color: #555; }
+.pcard.validated { border-left: 4px solid var(--green); background: #1a2a1a; }
+.pcard.rejected  { border-left: 4px solid var(--red); opacity: 0.45; }
+.pcard.manual    { border-left: 4px solid var(--blue); }
+.pname { font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+.pdesc { font-size: 12px; color: #888; line-height: 1.5; margin-bottom: 12px; }
+.pmeta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.mtag { font-size: 10px; font-weight: bold; padding: 2px 8px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); text-transform: uppercase; }
+.mtag.blue { border-color: var(--blue); color: #7aacff; }
+.pactions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.bv { padding: 6px 14px; background: #1a3a1a; border: 1px solid var(--green); color: var(--green); font-family: Arial,sans-serif; font-size: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+.bv:hover { background: #1e4a1e; }
+.br { padding: 6px 14px; background: #2a1a1a; border: 1px solid var(--red); color: #e74c3c; font-family: Arial,sans-serif; font-size: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+.br:hover { background: #3a1a1a; }
+.badge-v { font-size: 11px; color: var(--green); font-weight: bold; }
+.badge-r { font-size: 11px; color: #e74c3c; font-weight: bold; }
+.badge-m { font-size: 10px; color: #7aacff; font-weight: bold; padding: 2px 7px; border: 1px solid var(--blue); background: #1a2a4a; }
+.badge-m-abs { position: absolute; top: 12px; right: 12px; }
+
+/* ── MANUAL FORM ── */
+.manual-form { background: var(--bg2); border: 1px solid var(--blue); padding: 20px; margin-bottom: 24px; }
+.manual-form-title { font-size: 12px; font-weight: bold; color: #7aacff; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+.mgrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.mgrid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+@media(max-width:600px){ .mgrid2,.mgrid3 { grid-template-columns: 1fr; } }
+.minput, .mselect { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: Arial,sans-serif; font-size: 12px; padding: 8px 10px; outline: none; }
+.minput:focus, .mselect:focus { border-color: var(--blue); }
+.mselect option { background: var(--bg2); }
+.mlabel { font-size: 10px; font-weight: bold; color: var(--text2); text-transform: uppercase; margin-bottom: 4px; display: block; }
+
+/* ── RECAP ── */
+.recap { position: fixed; bottom: 0; left: 0; right: 0; background: #111; border-top: 3px solid var(--red); padding: 12px 32px; display: flex; align-items: center; justify-content: space-between; z-index: 50; flex-wrap: wrap; gap: 10px; }
+.recap-txt { font-size: 12px; color: var(--text3); }
+.recap-txt strong { color: #fff; font-weight: bold; }
+.recap-btns { display: flex; gap: 10px; }
+
+/* ── FICHES ── */
+.fiches { display: flex; flex-direction: column; gap: 24px; }
+.fiche { border: 1px solid var(--border); background: var(--bg2); }
+.fiche-head { padding: 16px 22px; background: var(--bg3); border-bottom: 3px solid var(--red); display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+.fiche-nom { font-size: 17px; font-weight: bold; color: #fff; }
+.fiche-cat { font-size: 10px; font-weight: bold; text-transform: uppercase; color: var(--red); margin-top: 3px; }
+.fmr { text-align: right; font-size: 11px; }
+.fmr .ml { color: var(--text3); font-size: 10px; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+.fmr .mv { color: #ccc; }
+.fiche-body { padding: 20px 22px; }
+.fsec { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #fff; background: var(--red); padding: 5px 10px; margin: 20px 0 10px; }
+.fsec:first-child { margin-top: 0; }
+.edit-hint { font-size: 10px; color: var(--text3); margin-bottom: 8px; font-style: italic; }
+
+table.ing { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; }
+table.ing thead, table.ing tbody, table.ing tr { display: table; width: 100%; table-layout: fixed; }
+table.ing th { text-align: left; padding: 7px 8px; font-size: 9px; font-weight: bold; text-transform: uppercase; color: var(--text2); background: var(--bg3); border: 1px solid var(--border); white-space: nowrap; }
+table.ing th.r { text-align: right; }
+table.ing td { border: 1px solid #2a2a2a; vertical-align: middle; padding: 0; }
+table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+.cell-ro { padding: 7px 8px; font-size: 12px; color: #7ec8a0; font-weight: bold; text-align: right; }
+.cell-unit { padding: 7px 8px; font-size: 12px; color: #777; text-align: center; }
+.ing-input { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 8px; text-align: right; }
+.ing-input:focus { background: rgba(155,35,53,0.18); }
+.ing-input.left { text-align: left; }
+
+.etapes { list-style: none; }
+.etape { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid #2a2a2a; }
+.etape:last-child { border-bottom: none; }
+.enum { font-size: 11px; font-weight: bold; color: var(--red); min-width: 24px; padding-top: 1px; }
+.etxt { font-size: 12px; color: #ccc; line-height: 1.6; }
+
+.alg-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
+.alg { font-size: 10px; font-weight: bold; padding: 3px 9px; border: 1px solid var(--red); color: #f0a0a0; text-transform: uppercase; background: rgba(155,35,53,0.12); }
+
+.costs { display: flex; align-items: center; justify-content: flex-end; gap: 32px; padding: 14px 0 0; border-top: 2px solid var(--red); margin-top: 16px; flex-wrap: wrap; }
+.cost-item { text-align: right; }
+.clabel { font-size: 10px; font-weight: bold; text-transform: uppercase; color: var(--text3); margin-bottom: 3px; }
+.cval { font-size: 22px; font-weight: bold; color: #fff; }
+.cval.green { color: #7ec8a0; }
+
+.export-bar { display: flex; gap: 10px; align-items: center; padding: 12px 16px; background: var(--bg2); border: 1px solid var(--border); margin-bottom: 24px; flex-wrap: wrap; }
+.export-lbl { font-size: 10px; font-weight: bold; color: var(--text3); flex: 1; text-transform: uppercase; }
+.err-box { padding: 24px; text-align: center; color: #e74c3c; font-size: 13px; line-height: 1.7; }
+.empty-state { padding: 40px 0; color: var(--text3); text-align: center; font-size: 12px; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ─────────────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Collection Anthouard</div>
+    <div class="login-title">Cuisine IA</div>
+    <div class="login-sub">Générateur de carte & fiches techniques</div>
+    <label class="login-label" for="code-input">Code d'accès</label>
+    <input class="login-input" id="code-input" type="password" placeholder="••••••••••••" autocomplete="off" maxlength="30">
+    <button class="login-btn" id="login-btn">Accéder →</button>
+    <div class="login-err" id="login-err">Code incorrect. Veuillez réessayer.</div>
+  </div>
+</div>
+
+<!-- ── APP ───────────────────────────────────────────────────────────────── -->
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="logo">Collection Anthouard <span>/ Cuisine IA</span></div>
+      <div class="logo-sub">Générateur de carte & fiches techniques</div>
+    </div>
+    <div class="header-right">
+      <span class="user-badge" id="user-badge"></span>
+      <div class="dot"></div>
+      <button class="btn-logout" id="logout-btn">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="inner">
+    <div class="step-nav">
+      <button class="snav active" id="nav-1" onclick="goStep(1)">01 — Paramétrer</button>
+      <button class="snav" id="nav-2" onclick="goStep(2)" disabled>02 — Composer la carte</button>
+      <button class="snav" id="nav-3" onclick="goStep(3)" disabled>03 — Fiches techniques</button>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="step-1">
+      <div class="sec-title">Paramètres de la carte</div>
+      <div class="sec-sub">Configurez votre carte — l'IA la compose, vous pouvez aussi créer vos propres plats</div>
+      <div class="grid2">
+        <div class="fgroup">
+          <label>Établissement</label>
+          <select class="fselect" id="cfg-etab">
+            <option>Maison d'Anthouard — Écully</option>
+            <option>Chalets d'Anthouard — Crest-Voland</option>
+          </select>
+        </div>
+        <div class="fgroup">
+          <label>Couverts par recette</label>
+          <input class="finput" type="number" id="cfg-couverts" value="1" min="1" max="50">
+          <div class="hint">Pour combien d'assiettes calibrer les grammages ?</div>
+        </div>
+        <div class="fgroup">
+          <label>Style / contraintes</label>
+          <input class="finput" type="text" id="cfg-style" placeholder="ex : produits locaux, sans gluten…">
+        </div>
+        <div class="fgroup">
+          <label>Coût matière cible / assiette (€ HT)</label>
+          <input class="finput" type="number" id="cfg-budget" value="1" min="0.5" max="200" step="0.5">
+          <div class="hint">Budget max ingrédients par assiette. Ex : 8 € pour un plat à 28 € ≈ 28% food cost.</div>
+        </div>
+      </div>
+      <div class="chips-label">Saison</div>
+      <div class="chips" id="chips-saison">
+        <button class="chip on" onclick="toggleChip(this)">Printemps</button>
+        <button class="chip" onclick="toggleChip(this)">Été</button>
+        <button class="chip" onclick="toggleChip(this)">Automne</button>
+        <button class="chip" onclick="toggleChip(this)">Hiver</button>
+      </div>
+      <div class="chips-label">Composition</div>
+      <div class="chips" id="chips-cats">
+        <button class="chip on" onclick="toggleChip(this)">Entrées</button>
+        <button class="chip on" onclick="toggleChip(this)">Plats</button>
+        <button class="chip on" onclick="toggleChip(this)">Desserts</button>
+        <button class="chip" onclick="toggleChip(this)">Fromages</button>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn-red" id="btn-generer" onclick="genererCarte()">▶ Générer la carte avec l'IA</button>
+        <button class="btn-blue" onclick="goStep(2)">✚ Créer mes plats manuellement</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step-2" style="display:none">
+      <div class="sec-title">Composer la carte</div>
+      <div class="sec-sub">Validez les suggestions IA, ajoutez vos propres plats</div>
+
+      <div class="mode-bar">
+        <span class="mode-label">Actions :</span>
+        <button class="btn-red" id="btn-regen" onclick="genererCarte()" style="font-size:11px;padding:8px 16px">↺ Suggestions IA</button>
+        <button class="btn-blue" id="btn-toggle-manual" onclick="toggleManualForm()" style="font-size:11px;padding:8px 16px">✚ Ajouter un plat</button>
+      </div>
+
+      <div id="manual-form" style="display:none">
+        <div class="manual-form">
+          <div class="manual-form-title">✚ Nouveau plat</div>
+          <div class="mgrid2">
+            <div><span class="mlabel">Catégorie</span>
+              <select class="mselect" id="m-cat"><option>Entrée</option><option>Plat</option><option>Dessert</option><option>Fromage</option></select>
+            </div>
+            <div><span class="mlabel">Difficulté</span>
+              <select class="mselect" id="m-diff"><option>Facile</option><option selected>Moyen</option><option>Difficile</option></select>
+            </div>
+          </div>
+          <div style="margin-bottom:10px">
+            <span class="mlabel">Nom du plat *</span>
+            <input class="minput" id="m-nom" placeholder="ex : Œuf parfait, champignons et truffe">
+          </div>
+          <div style="margin-bottom:10px">
+            <span class="mlabel">Description</span>
+            <input class="minput" id="m-desc" placeholder="ex : Œuf cuit à 63°C, crème de champignons, copeaux de truffe noire">
+          </div>
+          <div class="mgrid3">
+            <div><span class="mlabel">Produit vedette</span><input class="minput" id="m-produit" placeholder="ex : Truffe noire"></div>
+            <div><span class="mlabel">Technique clé</span><input class="minput" id="m-tech" placeholder="ex : Cuisson basse T°"></div>
+            <div><span class="mlabel">Temps de prep.</span><input class="minput" id="m-temps" placeholder="ex : 45 min"></div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn-blue" onclick="addManualPlat()">✚ Ajouter à la carte</button>
+            <button class="btn-outline" onclick="toggleManualForm()">Annuler</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="carte-loader" class="loader" style="display:none">
+        <div class="lbar"></div>
+        <div class="ltxt" id="carte-loader-txt">L'IA compose votre carte…</div>
+      </div>
+      <div id="carte-error" class="err-box" style="display:none"></div>
+      <div id="carte-container"></div>
+
+      <div id="recap-bar" class="recap" style="display:none">
+        <div class="recap-txt">
+          <strong id="r-val">0</strong> validés &nbsp;·&nbsp;
+          <strong id="r-rej">0</strong> retirés &nbsp;·&nbsp;
+          <strong id="r-pen">0</strong> en attente &nbsp;·&nbsp;
+          <strong id="r-man" style="color:#7aacff">0</strong> manuels
+        </div>
+        <div class="recap-btns">
+          <button class="btn-outline" onclick="goStep(1)">← Paramètres</button>
+          <button class="btn-red" id="btn-fiches" onclick="genererFiches()" disabled>Générer les fiches (<span id="r-val2">0</span>) →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="step-3" style="display:none">
+      <div class="sec-title">Fiches techniques</div>
+      <div class="sec-sub">Grammages et prix modifiables — export Excel modèle Collection Anthouard</div>
+      <div class="export-bar">
+        <span class="export-lbl">Export</span>
+        <button class="btn-green" onclick="exportAll()">⬇ Tout exporter (.xlsx)</button>
+        <button class="btn-outline" onclick="window.print()">🖨 Imprimer</button>
+        <button class="btn-outline" onclick="goStep(2)">← Retour carte</button>
+        <button class="btn-outline" onclick="resetApp()">↺ Nouvelle carte</button>
+      </div>
+      <div id="fiches-loader" class="loader" style="display:none">
+        <div class="lbar"></div>
+        <div class="ltxt" id="fiches-loader-txt">Génération des fiches…</div>
+      </div>
+      <div id="fiches-container" class="fiches"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let accessCode = "";
+let carte = [];      // { id, nom, categorie, description, technique_cle, produit_vedette, temps_prep, difficulte, status, manual }
+let fiches = {};     // id -> fiche data
+let fichesIngs = {}; // id -> ings array (modifiées)
+let nextId = 0;
+
+// ─── API ─────────────────────────────────────────────────────────────────────
+async function callAPI(action, extra = {}) {
+  const res = await fetch("/api/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, code: accessCode, ...extra })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+async function callClaude(messages, maxTokens = 3000) {
+  const data = await callAPI("chat", { messages, maxTokens });
+  return data.content.map(b => b.text || "").join("");
+}
+
+// ─── JSON PARSER ──────────────────────────────────────────────────────────────
+function parseJsonSafe(raw) {
+  if (!raw) return null;
+  let text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const fb = text.indexOf("{"), fa = text.indexOf("[");
+  let start = fb !== -1 && (fa === -1 || fb < fa) ? fb : fa;
+  if (start > 0) text = text.slice(start);
+  const end = Math.max(text.lastIndexOf("}"), text.lastIndexOf("]"));
+  if (end !== -1) text = text.slice(0, end + 1);
+  try { return JSON.parse(text); } catch (_) {}
+  try { return JSON.parse(text.replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/,\s*([}\]])/g,"$1")); } catch (_) {}
+  return null;
+}
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+document.getElementById("login-btn").onclick = doLogin;
+document.getElementById("code-input").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+async function doLogin() {
+  const code = document.getElementById("code-input").value.trim();
+  if (!code) return;
+  document.getElementById("login-btn").textContent = "Vérification…";
+  try {
+    const data = await fetch("/api/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "auth", code })
+    }).then(r => r.json());
+
+    if (data.ok) {
+      accessCode = code;
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      document.getElementById("user-badge").textContent = code.toUpperCase();
+      document.getElementById("login-err").style.display = "none";
+    } else {
+      document.getElementById("login-err").style.display = "block";
+    }
+  } catch (e) {
+    document.getElementById("login-err").textContent = "Erreur de connexion. Réessayez.";
+    document.getElementById("login-err").style.display = "block";
+  }
+  document.getElementById("login-btn").textContent = "Accéder →";
+}
+
+document.getElementById("logout-btn").onclick = () => {
+  accessCode = "";
+  carte = []; fiches = {}; fichesIngs = {}; nextId = 0;
+  document.getElementById("login-screen").style.display = "flex";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("code-input").value = "";
+};
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+let currentStep = 1;
+function goStep(n) {
+  if (n > 1 && n > currentStep && n !== currentStep + 1) return;
+  [1, 2, 3].forEach(i => {
+    document.getElementById("step-" + i).style.display = i === n ? "block" : "none";
+    const btn = document.getElementById("nav-" + i);
+    btn.className = "snav" + (i === n ? " active" : i < n ? " done" : "");
+    btn.disabled = i > n && i > currentStep;
+  });
+  currentStep = Math.max(currentStep, n);
+  document.getElementById("nav-" + n).disabled = false;
+  window.scrollTo(0, 0);
+}
+
+// ─── CHIPS ────────────────────────────────────────────────────────────────────
+function toggleChip(el) { el.classList.toggle("on"); }
+function getChips(id) {
+  return [...document.getElementById(id).querySelectorAll(".chip.on")].map(c => c.textContent.trim());
+}
+
+// ─── STEP 1 : CONFIG ──────────────────────────────────────────────────────────
+function getCfg() {
+  return {
+    etab: document.getElementById("cfg-etab").value,
+    couverts: parseInt(document.getElementById("cfg-couverts").value) || 1,
+    style: document.getElementById("cfg-style").value || "aucune",
+    budget: parseFloat(document.getElementById("cfg-budget").value) || 1,
+    saison: getChips("chips-saison").join(", ") || "Printemps",
+  };
+}
+
+// ─── STEP 2 : CARTE ───────────────────────────────────────────────────────────
+function toggleManualForm() {
+  const f = document.getElementById("manual-form");
+  f.style.display = f.style.display === "none" ? "block" : "none";
+  document.getElementById("btn-toggle-manual").textContent =
+    f.style.display === "block" ? "✕ Annuler" : "✚ Ajouter un plat";
+}
+
+function addManualPlat() {
+  const nom = document.getElementById("m-nom").value.trim();
+  if (!nom) { alert("Le nom du plat est obligatoire."); return; }
+  carte.push({
+    id: nextId++,
+    categorie: document.getElementById("m-cat").value,
+    nom,
+    description: document.getElementById("m-desc").value,
+    produit_vedette: document.getElementById("m-produit").value,
+    technique_cle: document.getElementById("m-tech").value,
+    temps_prep: document.getElementById("m-temps").value,
+    difficulte: document.getElementById("m-diff").value,
+    status: "validated",
+    manual: true
+  });
+  ["m-nom","m-desc","m-produit","m-tech","m-temps"].forEach(id => document.getElementById(id).value = "");
+  toggleManualForm();
+  renderCarte();
+}
+
+async function genererCarte() {
+  goStep(2);
+  const cfg = getCfg();
+  carte = carte.filter(p => p.manual);
+  document.getElementById("carte-loader").style.display = "flex";
+  document.getElementById("carte-error").style.display = "none";
+  document.getElementById("carte-container").innerHTML = "";
+  document.getElementById("recap-bar").style.display = "none";
+
+  const prompt =
+    "Tu es chef cuisinier expert en cuisine bistronomique francaise. " +
+    "Genere une carte pour " + cfg.etab + ". Saison : " + cfg.saison +
+    ". Contraintes : " + cfg.style + ". Budget cout matiere : " + cfg.budget + " euro HT par assiette. " +
+    "Genere exactement 3 entrees, 4 plats, 3 desserts. Nom 5 mots max. Description 12 mots max. " +
+    "Reponds UNIQUEMENT avec ce JSON (zero texte, zero backtick) : " +
+    '{"carte":[{"categorie":"Entree","nom":"Nom","description":"Desc","technique_cle":"Tech","produit_vedette":"Produit","temps_prep":"30 min","difficulte":"Moyen"}]}';
+
+  try {
+    const raw = await callClaude([{ role: "user", content: prompt }], 3000);
+    const parsed = parseJsonSafe(raw);
+    if (!parsed?.carte?.length) throw new Error("Réponse invalide. Réessayez.");
+    parsed.carte.forEach(p => carte.push({ ...p, id: nextId++, status: "pending", manual: false }));
+    renderCarte();
+  } catch (e) {
+    document.getElementById("carte-error").textContent = "Erreur : " + e.message;
+    document.getElementById("carte-error").style.display = "block";
+    document.getElementById("carte-error").innerHTML += '<br><br><button class="btn-red" onclick="genererCarte()">Réessayer</button>';
+  }
+  document.getElementById("carte-loader").style.display = "none";
+}
+
+const CAT_ORDER = ["Entrée", "Entree", "Plat", "Dessert", "Fromage"];
+
+function carteGrouped() {
+  const groups = {};
+  carte.forEach(p => { const k = p.categorie || "Autre"; if (!groups[k]) groups[k] = []; groups[k].push(p); });
+  const ordered = CAT_ORDER.filter(c => groups[c]).map(c => ({ cat: c, plats: groups[c] }));
+  const extra = Object.keys(groups).filter(k => !CAT_ORDER.includes(k)).map(k => ({ cat: k, plats: groups[k] }));
+  return [...ordered, ...extra].filter(g => g.plats?.length > 0);
+}
+
+function setStatus(id, status) {
+  const p = carte.find(p => p.id === id);
+  if (p) p.status = status;
+  renderCarte();
+}
+function removePlat(id) { carte = carte.filter(p => p.id !== id); renderCarte(); }
+
+function renderCarte() {
+  const container = document.getElementById("carte-container");
+  const groups = carteGrouped();
+
+  if (groups.length === 0) {
+    container.innerHTML = '<div class="empty-state">Aucun plat pour l\'instant.<br>Générez une carte avec l\'IA ou ajoutez vos plats manuellement.</div>';
+    document.getElementById("recap-bar").style.display = "none";
+    return;
+  }
+
+  let html = "";
+  groups.forEach(({ cat, plats }) => {
+    const valCount = plats.filter(p => p.status === "validated" || p.manual).length;
+    html += `<div class="cat-section">
+      <div class="cat-title">
+        <span>— ${cat}${cat !== "Fromage" ? "s" : "s"}</span>
+        <span style="font-size:10px;opacity:0.7">${valCount} validé${valCount > 1 ? "s" : ""}</span>
+      </div>
+      <div class="cards-row">`;
+    plats.forEach(plat => {
+      const cls = plat.manual ? "manual" : plat.status;
+      const metas = [plat.produit_vedette, plat.technique_cle, plat.temps_prep, plat.difficulte].filter(Boolean);
+      html += `<div class="pcard ${cls}">
+        ${plat.manual ? `<span class="badge-m badge-m-abs">Manuel</span>` : ""}
+        <div class="pname">${esc(plat.nom)}</div>
+        <div class="pdesc">${esc(plat.description) || "<em style='color:#555'>Aucune description</em>"}</div>
+        <div class="pmeta">${metas.map(t => `<span class="mtag${plat.manual ? " blue" : ""}">${esc(t)}</span>`).join("")}</div>
+        <div class="pactions">`;
+      if (plat.manual) {
+        html += `<span class="badge-v">✓ Validé</span>
+          <button class="br" onclick="removePlat(${plat.id})">✕ Supprimer</button>`;
+      } else if (plat.status === "validated") {
+        html += `<span class="badge-v">✓ Validé</span>
+          <button class="br" onclick="setStatus(${plat.id},'rejected')">Retirer</button>`;
+      } else if (plat.status === "rejected") {
+        html += `<span class="badge-r">✗ Retiré</span>
+          <button class="bv" onclick="setStatus(${plat.id},'validated')">Remettre</button>`;
+      } else {
+        html += `<button class="bv" onclick="setStatus(${plat.id},'validated')">✓ Valider</button>
+          <button class="br" onclick="setStatus(${plat.id},'rejected')">✗ Retirer</button>`;
+      }
+      html += `</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+  container.innerHTML = html;
+
+  updateRecap();
+  document.getElementById("recap-bar").style.display = "flex";
+}
+
+function updateRecap() {
+  const val = carte.filter(p => p.status === "validated" || p.manual).length;
+  const rej = carte.filter(p => p.status === "rejected").length;
+  const pen = carte.filter(p => p.status === "pending").length;
+  const man = carte.filter(p => p.manual).length;
+  document.getElementById("r-val").textContent = val;
+  document.getElementById("r-rej").textContent = rej;
+  document.getElementById("r-pen").textContent = pen;
+  document.getElementById("r-man").textContent = man;
+  document.getElementById("r-val2").textContent = val;
+  document.getElementById("btn-fiches").disabled = val === 0;
+}
+
+function esc(s) { return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// ─── STEP 3 : FICHES ──────────────────────────────────────────────────────────
+async function genererFiches() {
+  const cfg = getCfg();
+  const plats = carte.filter(p => p.status === "validated" || p.manual);
+  goStep(3);
+  fiches = {}; fichesIngs = {};
+  document.getElementById("fiches-loader").style.display = "flex";
+  document.getElementById("fiches-container").innerHTML = "";
+
+  for (let i = 0; i < plats.length; i++) {
+    const plat = plats[i];
+    document.getElementById("fiches-loader-txt").textContent = `Fiche ${i + 1}/${plats.length} — ${plat.nom}…`;
+
+    const prompt =
+      "Tu es chef cuisinier expert. Fiche technique pour : " + plat.nom +
+      ". Categorie : " + plat.categorie +
+      ". Budget cout matiere : " + cfg.budget + " euro HT par assiette. " +
+      "Max 8 ingredients. Max 5 etapes de 15 mots max. Valeurs numeriques = nombres JS. " +
+      "Prix en euros par unite (gramme, ml ou piece). " +
+      "Reponds UNIQUEMENT avec ce JSON (zero texte, zero backtick) : " +
+      '{"ingredients":[{"nom":"Beurre","qte_brute":50,"unite":"g","perte_pct":0,"qte_nette":50,"prix_unitaire_ht":0.008,"total_ht":0.40}],' +
+      '"etapes":["Etape 1","Etape 2"],"allergenes":["Lait"],' +
+      '"conservation":"3 jours 4C","temp_service":"65C","cout_total_ht":2.50,"cout_par_couvert_ht":2.50}';
+
+    try {
+      const raw = await callClaude([{ role: "user", content: prompt }], 2000);
+      fiches[plat.id] = parseJsonSafe(raw) || { error: true };
+    } catch (e) {
+      fiches[plat.id] = { error: true, msg: e.message };
+    }
+  }
+
+  document.getElementById("fiches-loader").style.display = "none";
+  renderFiches(plats, cfg);
+}
+
+function renderFiches(plats, cfg) {
+  const container = document.getElementById("fiches-container");
+  container.innerHTML = "";
+  plats.forEach(plat => {
+    const f = fiches[plat.id];
+    if (!f) return;
+    const div = document.createElement("div");
+    div.className = "fiche";
+    if (f.error) {
+      div.innerHTML = `<div class="fiche-head"><div><div class="fiche-nom">${esc(plat.nom)}</div><div class="fiche-cat">${esc(plat.categorie)}</div></div></div>
+        <div class="fiche-body"><div class="err-box">Erreur de génération.${f.msg ? " " + f.msg : ""}</div></div>`;
+    } else {
+      const ings = (f.ingredients || []).map((ing, i) => ({ ...ing, _id: i }));
+      fichesIngs[plat.id] = ings;
+      div.innerHTML = buildFicheHTML(plat, f, ings, cfg);
+      attachIngListeners(div, plat.id, ings, cfg, plat);
+    }
+    container.appendChild(div);
+  });
+}
+
+function buildFicheHTML(plat, fiche, ings, cfg) {
+  const totalHT = ings.reduce((s, i) => s + (parseFloat(i.total_ht) || 0), 0);
+  const coutCouvert = cfg.couverts > 0 ? totalHT / cfg.couverts : 0;
+  const etapes = (fiche.etapes || []).map((e, i) =>
+    `<li class="etape"><span class="enum">0${i+1}</span><span class="etxt">${esc(e)}</span></li>`
+  ).join("");
+  const algs = (fiche.allergenes || []).length > 0
+    ? fiche.allergenes.map(a => `<span class="alg">${esc(a)}</span>`).join("")
+    : `<span style="font-size:12px;color:#555">Aucun allergène majeur identifié</span>`;
+
+  return `
+    <div class="fiche-head">
+      <div>
+        <div class="fiche-nom">${esc(plat.nom)}</div>
+        <div class="fiche-cat">${esc(plat.categorie)} · ${esc(cfg.etab)} · ${cfg.couverts} couvert${cfg.couverts > 1 ? "s" : ""}</div>
+      </div>
+      <div class="fmr">
+        <div class="ml">Conservation</div><div class="mv">${esc(fiche.conservation || "—")}</div>
+        <div class="ml" style="margin-top:8px">T° service</div><div class="mv">${esc(fiche.temp_service || "—")}</div>
+      </div>
+    </div>
+    <div class="fiche-body">
+      <div class="fsec">Ingrédients & grammages</div>
+      <div class="edit-hint">✎ Cliquez sur un grammage ou un prix pour le modifier — les totaux se recalculent automatiquement.</div>
+      <table class="ing" id="ing-table-${plat.id}">
+        <thead><tr>
+          <th style="width:26%">Ingrédient</th>
+          <th class="r" style="width:10%">Qté brute</th>
+          <th style="width:7%;text-align:center">Unité</th>
+          <th class="r" style="width:9%">% perte</th>
+          <th class="r" style="width:10%">Qté nette</th>
+          <th class="r" style="width:15%">Prix U. HT (€/u)</th>
+          <th class="r" style="width:12%">Total HT</th>
+        </tr></thead>
+        <tbody id="ing-body-${plat.id}">
+          ${ings.map(ing => ingRow(ing)).join("")}
+        </tbody>
+      </table>
+      <div class="fsec">Préparation</div>
+      <ul class="etapes">${etapes}</ul>
+      <div class="fsec">Allergènes</div>
+      <div class="alg-wrap">${algs}</div>
+      <div class="costs">
+        <div style="flex:1">
+          <button class="btn-green" style="font-size:10px" onclick="exportFiche(${plat.id}, '${esc(plat.nom)}')">⬇ Exporter cette fiche (.xlsx)</button>
+        </div>
+        <div class="cost-item">
+          <div class="clabel">Coût total HT</div>
+          <div class="cval" id="total-ht-${plat.id}">${eurFmt(totalHT)}</div>
+        </div>
+        <div class="cost-item">
+          <div class="clabel">Coût / assiette HT</div>
+          <div class="cval green" id="cout-couvert-${plat.id}">${eurFmt(coutCouvert)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function ingRow(ing) {
+  return `<tr data-id="${ing._id}">
+    <td><input class="ing-input left" data-field="nom" value="${esc(ing.nom || "")}"></td>
+    <td><input class="ing-input" data-field="qte_brute" type="number" min="0" step="1" value="${ing.qte_brute || 0}"></td>
+    <td><div class="cell-unit">${esc(ing.unite || "")}</div></td>
+    <td><input class="ing-input" data-field="perte_pct" type="number" min="0" max="100" step="1" value="${ing.perte_pct || 0}"></td>
+    <td><div class="cell-ro" data-qte-nette="${ing._id}">${ing.qte_nette || 0}</div></td>
+    <td><input class="ing-input" data-field="prix_unitaire_ht" type="number" min="0" step="0.001" value="${ing.prix_unitaire_ht || 0}"></td>
+    <td><div class="cell-ro" data-total-ht="${ing._id}">${eurFmt(ing.total_ht)}</div></td>
+  </tr>`;
+}
+
+function attachIngListeners(container, platId, ings, cfg, plat) {
+  const tbody = container.querySelector("#ing-body-" + platId);
+  if (!tbody) return;
+  tbody.addEventListener("input", e => {
+    const input = e.target;
+    if (!input.classList.contains("ing-input")) return;
+    const tr = input.closest("tr");
+    const id = parseInt(tr.dataset.id);
+    const field = input.dataset.field;
+    const val = input.value;
+    const ing = ings.find(i => i._id === id);
+    if (!ing) return;
+    ing[field] = val;
+    const b = parseFloat(field === "qte_brute" ? val : ing.qte_brute) || 0;
+    const d = parseFloat(field === "perte_pct" ? val : ing.perte_pct) || 0;
+    const p = parseFloat(field === "prix_unitaire_ht" ? val : ing.prix_unitaire_ht) || 0;
+    ing.qte_nette = parseFloat((b * (1 - d / 100)).toFixed(2));
+    ing.total_ht = parseFloat((b * p).toFixed(3));
+    tr.querySelector("[data-qte-nette]").textContent = ing.qte_nette;
+    tr.querySelector("[data-total-ht]").textContent = eurFmt(ing.total_ht);
+    fichesIngs[platId] = ings;
+    const total = ings.reduce((s, i) => s + (parseFloat(i.total_ht) || 0), 0);
+    const couvert = cfg.couverts > 0 ? total / cfg.couverts : 0;
+    document.getElementById("total-ht-" + platId).textContent = eurFmt(total);
+    document.getElementById("cout-couvert-" + platId).textContent = eurFmt(couvert);
+  });
+}
+
+function eurFmt(n) {
+  if (n == null || isNaN(n)) return "—";
+  return parseFloat(n).toFixed(2).replace(".", ",") + " €";
+}
+
+// ─── EXCEL EXPORT ─────────────────────────────────────────────────────────────
+function buildFicheSheet(wb, plat, fiche, ings, cfg) {
+  const sheetName = plat.nom.replace(/[\\\/\?\*\[\]:]/g, "").slice(0, 31) || "Fiche";
+  const RESERVE = 4, couverts = cfg.couverts || 1;
+  const C = { DR:"7A1C28",R:"9B2335",GH:"3A3A3A",G55:"555555",G44:"444444",
+              LG:"F5F5F5",FA:"FAFAFA",GR:"E8F5E9",BL:"EBF3FB",OR:"FFF8E1",WH:"FFFFFF",DG:"1A6A1A" };
+
+  function fs(bold,sz,color,bg,ha,wrap){
+    return{font:{name:"Arial",bold:!!bold,sz:sz||10,color:{rgb:color||"000000"}},
+           fill:bg?{fgColor:{rgb:bg},patternType:"solid"}:{},
+           alignment:{horizontal:ha||"left",vertical:"center",wrapText:!!wrap},
+           border:{top:{style:"thin",color:{rgb:"CCCCCC"}},bottom:{style:"thin",color:{rgb:"CCCCCC"}},
+                   left:{style:"thin",color:{rgb:"CCCCCC"}},right:{style:"thin",color:{rgb:"CCCCCC"}}}};
+  }
+  function fh(bold,sz,color,bg){
+    return{font:{name:"Arial",bold:!!bold,sz:sz||10,color:{rgb:color||"000000"}},
+           fill:bg?{fgColor:{rgb:bg},patternType:"solid"}:{},
+           alignment:{horizontal:"center",vertical:"center",wrapText:true}};
+  }
+  function cell(v,s,z){const c={v:v??"",s};if(z)c.z=z;if(typeof v==="number")c.t="n";return c;}
+  function fcell(f,s,z){return{f,s,z};}
+  function empty(s){return{v:"",s};}
+
+  const rows=[],merges=[];let r=0;
+
+  rows.push([cell("FICHE TECHNIQUE — COLLECTION ANTHOUARD",fh(true,13,C.WH,C.DR)),...Array(7).fill(empty(fh(false,10,C.WH,C.DR)))]);
+  merges.push({s:{r,c:0},e:{r,c:7}});r++;
+
+  const nS=fh(true,12,C.WH,C.R),mL=fh(true,9,C.WH,C.G55),mV=fh(false,9,C.WH,C.G44);
+  rows.push([cell(plat.nom,nS),...Array(4).fill(empty(nS)),cell("Conservation :",mL),cell(fiche.conservation||"—",mV),empty(mV)]);
+  merges.push({s:{r,c:0},e:{r,c:4}});r++;
+
+  const sS=fh(false,9,C.WH,C.G44);
+  rows.push([cell(plat.categorie+"  ·  "+cfg.etab+"  ·  "+couverts+" couvert"+(couverts>1?"s":""),sS),...Array(4).fill(empty(sS)),cell("T° service :",mL),cell(fiche.temp_service||"—",mV),empty(mV)]);
+  merges.push({s:{r,c:0},e:{r,c:4}});r++;
+
+  rows.push(Array(8).fill({v:""}));r++;
+
+  const sec=fh(true,11,C.WH,C.R);
+  rows.push([cell("INGRÉDIENTS & GRAMMAGES",sec),...Array(7).fill(empty(sec))]);
+  merges.push({s:{r,c:0},e:{r,c:7}});r++;
+
+  const th=v=>cell(v,fh(true,9,C.WH,C.GH));
+  rows.push([th("Ingrédient"),th("Qté brute"),th("Unité"),th("% perte"),th("Qté nette"),th("Prix/kg ou L (€)"),th("Prix U. HT (€/u)"),th("Total HT (€)")]);r++;
+
+  const firstIng=r+1;
+  ings.forEach((ing,idx)=>{
+    const exr=r+1,bg=idx%2===1?C.LG:null;
+    const prixKg=ing.unite&&ing.unite.toLowerCase()==="pce"?parseFloat(ing.prix_unitaire_ht||0):parseFloat((ing.prix_unitaire_ht||0)*1000);
+    rows.push([
+      cell(ing.nom||"",fs(false,10,"000000",bg,"left")),
+      cell(parseFloat(ing.qte_brute)||0,fs(false,10,"000000",C.BL,"right"),"#,##0.00"),
+      cell(ing.unite||"",fs(false,10,"000000",bg,"center")),
+      cell(parseFloat(ing.perte_pct)||0,fs(false,10,"000000",C.BL,"right"),'0.0"%"'),
+      fcell(`SUM((1)-(D${exr}/100))*B${exr}`,fs(true,10,"000000",C.GR,"right"),"#,##0.00"),
+      cell(parseFloat(prixKg.toFixed(3)),fs(false,10,"000000",C.OR,"right"),'#,##0.000 "€"'),
+      fcell(ing.unite&&ing.unite.toLowerCase()==="pce"?`F${exr}`:`F${exr}/1000`,fs(true,10,"000000",C.GR,"right"),'#,##0.0000 "€"'),
+      fcell(`B${exr}*G${exr}`,fs(true,10,"000000",C.GR,"right"),'#,##0.00 "€"'),
+    ]);r++;
+  });
+
+  for(let i=0;i<RESERVE;i++){
+    const exr=r+1,bg=i%2===1?C.LG:null;
+    rows.push([
+      cell("",fs(false,10,"000000",bg,"left")),cell("",fs(false,10,"000000",C.BL,"right")),
+      cell("",fs(false,10,"000000",bg,"center")),cell("",fs(false,10,"000000",C.BL,"right")),
+      fcell(`IF(B${exr}="","",SUM((1)-(D${exr}/100))*B${exr})`,fs(true,10,"000000",C.GR,"right"),"#,##0.00"),
+      cell("",fs(false,10,"000000",C.OR,"right")),
+      fcell(`IF(F${exr}="","",F${exr}/1000)`,fs(true,10,"000000",C.GR,"right"),'#,##0.0000 "€"'),
+      fcell(`IF(B${exr}="","",B${exr}*G${exr})`,fs(true,10,"000000",C.GR,"right"),'#,##0.00 "€"'),
+    ]);r++;
+  }
+
+  const totalRow=r+1,lastIng=totalRow-1;
+  const tS={font:{name:"Arial",bold:true,sz:10,color:{rgb:C.WH}},fill:{fgColor:{rgb:C.GH},patternType:"solid"},alignment:{horizontal:"right",vertical:"center"}};
+  const vS={font:{name:"Arial",bold:true,sz:12,color:{rgb:C.DG}},fill:{fgColor:{rgb:C.GR},patternType:"solid"},alignment:{horizontal:"right",vertical:"center"},border:{top:{style:"thin",color:{rgb:"CCCCCC"}},bottom:{style:"thin",color:{rgb:"CCCCCC"}},left:{style:"thin",color:{rgb:"CCCCCC"}},right:{style:"thin",color:{rgb:"CCCCCC"}}}};
+  rows.push([cell("COÛT MATIÈRE TOTAL HT",tS),...Array(6).fill(empty(tS)),fcell(`SUM(H${firstIng}:H${lastIng})`,vS,'#,##0.00 "€"')]);
+  merges.push({s:{r,c:0},e:{r,c:6}});r++;
+
+  const cvS={...vS,font:{...vS.font,sz:14}};
+  rows.push([cell(`COÛT PAR ASSIETTE HT  (÷ ${couverts})`,tS),...Array(6).fill(empty(tS)),fcell(`H${totalRow}/${couverts}`,cvS,'#,##0.00 "€"')]);
+  merges.push({s:{r,c:0},e:{r,c:6}});r++;
+
+  rows.push(Array(8).fill({v:""}));r++;
+  const lS={font:{name:"Arial",sz:8,color:{rgb:"666666"},italic:true},fill:{fgColor:{rgb:C.FA},patternType:"solid"},alignment:{horizontal:"left",vertical:"center"}};
+  rows.push([cell("  ■ Bleu = valeur à saisir    ■ Orange = prix/kg à saisir    ■ Vert = calculé automatiquement",lS),...Array(7).fill(empty(lS))]);
+  merges.push({s:{r,c:0},e:{r,c:7}});r++;
+  rows.push(Array(8).fill({v:""}));r++;
+
+  rows.push([cell("PRÉPARATION",sec),...Array(7).fill(empty(sec))]);
+  merges.push({s:{r,c:0},e:{r,c:7}});r++;
+  (fiche.etapes||[]).forEach((etape,i)=>{
+    const bg=i%2===1?C.LG:null;
+    const nS2={font:{name:"Arial",bold:true,sz:10,color:{rgb:C.R}},fill:bg?{fgColor:{rgb:bg},patternType:"solid"}:{},alignment:{horizontal:"center",vertical:"center"},border:{top:{style:"thin",color:{rgb:"CCCCCC"}},bottom:{style:"thin",color:{rgb:"CCCCCC"}},left:{style:"thin",color:{rgb:"CCCCCC"}},right:{style:"thin",color:{rgb:"CCCCCC"}}}};
+    rows.push([cell("0"+(i+1),nS2),cell(etape,fs(false,10,"000000",bg,"left",true)),...Array(6).fill(empty(fs(false,10,"000000",bg)))]);
+    merges.push({s:{r,c:1},e:{r,c:7}});r++;
+  });
+
+  rows.push(Array(8).fill({v:""}));r++;
+  rows.push([cell("ALLERGÈNES",sec),...Array(7).fill(empty(sec))]);
+  merges.push({s:{r,c:0},e:{r,c:7}});r++;
+  const algTxt=(fiche.allergenes||[]).length>0?fiche.allergenes.join("  ·  "):"Aucun allergène majeur identifié";
+  rows.push([cell(algTxt,fs(false,10,"000000",C.LG,"left")),...Array(7).fill(empty(fs(false,10,"000000",C.LG)))]);
+  merges.push({s:{r,c:0},e:{r,c:7}});r++;
+
+  const ws=XLSX.utils.aoa_to_sheet(rows.map(row=>row.map(c=>c.f?"":(c.v??""))));
+  rows.forEach((row,ri)=>row.forEach((c2,ci)=>{
+    const addr=XLSX.utils.encode_cell({r:ri,c:ci});
+    if(!ws[addr])ws[addr]={};
+    if(c2.f){ws[addr].f=c2.f;ws[addr].t="n";}
+    else if(c2.v!==undefined){ws[addr].v=c2.v;ws[addr].t=typeof c2.v==="number"?"n":"s";}
+    if(c2.s)ws[addr].s=c2.s;
+    if(c2.z)ws[addr].z=c2.z;
+  }));
+  ws["!merges"]=merges;
+  ws["!cols"]=[{wch:30},{wch:12},{wch:8},{wch:9},{wch:11},{wch:14},{wch:13},{wch:13}];
+  ws["!rows"]=rows.map((_,i)=>i===0?{hpx:28}:i===1?{hpx:22}:i===2?{hpx:18}:i===3?{hpx:8}:i===4?{hpx:20}:i===5?{hpx:34}:{hpx:20});
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+}
+
+function exportFiche(platId, nom) {
+  const plat = carte.find(p => p.id === platId);
+  const fiche = fiches[platId];
+  const ings = fichesIngs[platId];
+  if (!plat || !fiche || !ings) return;
+  const cfg = getCfg();
+  const wb = XLSX.utils.book_new();
+  buildFicheSheet(wb, plat, fiche, ings, cfg);
+  XLSX.writeFile(wb, "FT_" + nom.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 30) + ".xlsx");
+}
+
+function exportAll() {
+  const cfg = getCfg();
+  const plats = carte.filter(p => p.status === "validated" || p.manual);
+  const wb = XLSX.utils.book_new();
+  plats.forEach(plat => {
+    const f = fiches[plat.id], ings = fichesIngs[plat.id];
+    if (f && !f.error && ings) buildFicheSheet(wb, plat, f, ings, cfg);
+  });
+  XLSX.writeFile(wb, "Fiches_Techniques_Anthouard.xlsx");
+}
+
+function resetApp() {
+  carte = []; fiches = {}; fichesIngs = {}; nextId = 0;
+  document.getElementById("fiches-container").innerHTML = "";
+  document.getElementById("carte-container").innerHTML = "";
+  document.getElementById("recap-bar").style.display = "none";
+  currentStep = 1;
+  goStep(1);
+}
+</script>
+</body>
+</html>
