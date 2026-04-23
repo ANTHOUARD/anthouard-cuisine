@@ -1534,13 +1534,18 @@ async function sauvegarderFiches() {
     const ings  = fichesIngs[String(plat.id)];
     if (!fiche || fiche.error) return;
 
-    // Chercher la fiche existante : d'abord par _biblioId (ouverture depuis biblio), puis par nom
-    const existingIdx = plat._biblioId
-      ? biblio.findIndex(f => f.id === plat._biblioId)
-      : biblio.findIndex(f => f.nom.toLowerCase() === plat.nom.toLowerCase());
-    
+    // Supprimer TOUS les doublons du même nom avant de sauvegarder
+    const nomLower = plat.nom.toLowerCase();
+    // Garder toutes les fiches sauf celles du même nom
+    const biblioSansCeNom = biblio.filter(f => f.nom.toLowerCase() !== nomLower);
+    biblio.length = 0;
+    biblioSansCeNom.forEach(f => biblio.push(f));
+
+    // Créer le nouvel enregistrement
+    // Réutiliser l'id biblio si on vient d'ouvrir depuis la biblio
+    const existingId = plat._biblioId || null;
     const record = {
-      id: "fiche_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
+      id: existingId || "fiche_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
       nom: plat.nom,
       categorie: plat.categorie,
       etab: cfg.etab,
@@ -1552,13 +1557,9 @@ async function sauvegarderFiches() {
       marge: document.getElementById("marge-" + plat.id)?.value || "70",
     };
 
-    if (existingIdx >= 0) {
-      // Remplacer l'existant
-      record.id = biblio[existingIdx].id; // garder le même id
-      biblio[existingIdx] = record;
-    } else {
-      biblio.push(record);
-    }
+    biblio.push(record);
+    // Mettre à jour _biblioId sur le plat pour les prochaines sauvegardes
+    plat._biblioId = record.id;
     saved++;
   });
 
