@@ -1534,8 +1534,10 @@ async function sauvegarderFiches() {
     const ings  = fichesIngs[String(plat.id)];
     if (!fiche || fiche.error) return;
 
-    // Vérifier si une fiche avec le même nom existe déjà
-    const existingIdx = biblio.findIndex(f => f.nom.toLowerCase() === plat.nom.toLowerCase());
+    // Chercher la fiche existante : d'abord par _biblioId (ouverture depuis biblio), puis par nom
+    const existingIdx = plat._biblioId
+      ? biblio.findIndex(f => f.id === plat._biblioId)
+      : biblio.findIndex(f => f.nom.toLowerCase() === plat.nom.toLowerCase());
     
     const record = {
       id: "fiche_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
@@ -1651,7 +1653,7 @@ async function ouvrirFiche(ficheId) {
 
   // Restaurer l'état — normaliser l'id en string partout
   const rid = String(record.plat.id || nextId++);
-  carte = [{ ...record.plat, id: rid, status: "validated" }];
+  carte = [{ ...record.plat, id: rid, status: "validated", _biblioId: record.id }];
   fiches[rid] = record.fiche;
   fichesIngs[rid] = JSON.parse(JSON.stringify(record.ings));
 
