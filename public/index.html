@@ -1055,41 +1055,61 @@ document.addEventListener("DOMContentLoaded", () => {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws);
 
-      if (!rows.length) throw new Error("Fichier vide");
+      // Lire toutes les lignes brutes (avec header: 1 pour avoir les index numériques)
+      const allRows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      if (!allRows.length) throw new Error("Fichier vide");
 
-      // Détecter les colonnes (flexible)
-      const first = rows[0];
-      const keys = Object.keys(first);
-      const colNom    = keys.find(k => k.toLowerCase().includes("lib") || k.toLowerCase().includes("nom") || k.toLowerCase().includes("produit"));
-      const colPrix   = keys.find(k => k.toLowerCase().includes("prix"));
-      const colUnite  = keys.find(k => k.toLowerCase().includes("unit"));
-      const colFourn  = keys.find(k => k.toLowerCase().includes("fourn"));
-      const colCode   = keys.find(k => k.toLowerCase().includes("code"));
-      const colFamille= keys.find(k => k.toLowerCase().includes("famil"));
+      // Trouver la ligne d'en-tête (contient "Libellé" ou "Proposition")
+      let headerIdx = 0;
+      for (let i = 0; i < Math.min(5, allRows.length); i++) {
+        const row = allRows[i].map(c => String(c||"").toLowerCase());
+        if (row.some(c => c.includes("lib") || c.includes("proposition") || c.includes("prix"))) {
+          headerIdx = i;
+          break;
+        }
+      }
+      const headers = allRows[headerIdx].map(c => String(c||"").toLowerCase());
+      const dataRows = allRows.slice(headerIdx + 1);
 
-      if (!colNom || !colPrix) throw new Error("Colonnes 'Libellé Produit' et 'Prix d\'achat' requises");
+      // Détecter les colonnes
+      const iLib    = headers.findIndex(h => h.includes("lib") || h.includes("produit"));
+      const iProp   = headers.findIndex(h => h.includes("proposition") || h.includes("poposition") || h.includes("ia"));
+      const iPrix   = headers.findIndex(h => h.includes("prix"));
+      const iUnite  = headers.findIndex(h => h.includes("unit"));
+      const iFourn  = headers.findIndex(h => h.includes("fourn"));
+      const iCode   = headers.findIndex(h => h.includes("code"));
+      const iFam    = headers.findIndex(h => h.includes("famil"));
 
-      const newMerc = rows.map(row => {
-        const nom   = String(row[colNom] || "").trim();
-        const unite = String(row[colUnite] || "kg").trim();
-        const prix  = parseFloat(row[colPrix]) || 0;
-        const u_norm = unite.toLowerCase().includes("pi") || unite.toLowerCase() === "pce" ? "pce"
-                     : unite.toLowerCase().includes("litre") || unite.toLowerCase() === "l" ? "l"
-                     : unite.toLowerCase() === "kg" ? "kg" : "g";
-        const prix_u = u_norm === "kg" ? prix/1000 : u_norm === "l" ? prix/1000 : prix;
+      if (iPrix < 0) throw new Error("Colonne 'Prix d\'achat' introuvable");
+
+      const newMerc = dataRows.map(row => {
+        // La clé de correspondance = Proposition IA si dispo, sinon Libellé Produit
+        const nomIA  = iProp >= 0 ? String(row[iProp]||"").trim() : "";
+        const nomLib = iLib >= 0  ? String(row[iLib] ||"").trim() : "";
+        const nom    = nomIA || nomLib;
+        if (!nom) return null;
+
+        const prix   = parseFloat(row[iPrix]) || 0;
+        if (prix <= 0) return null;
+
+        const uniteRaw = iUnite >= 0 ? String(row[iUnite]||"kg").trim() : "kg";
+        const u_norm = uniteRaw.toLowerCase().includes("pi") || uniteRaw.toLowerCase() === "pce" ? "pce"
+                     : uniteRaw.toLowerCase().includes("litre") || uniteRaw.toLowerCase() === "l" ? "l"
+                     : uniteRaw.toLowerCase() === "kg" ? "kg" : "g";
+        const prix_u = (u_norm === "kg" || u_norm === "l") ? prix/1000 : prix;
+
         return {
           nom,
           nom_lower: normalizeStr(nom),
           unite: u_norm,
           prix_achat: prix,
           prix_unitaire: prix_u,
-          fournisseur: colFourn ? String(row[colFourn]||"").trim() : "",
-          code: colCode ? String(row[colCode]||"").trim() : "",
-          famille: colFamille ? String(row[colFamille]||"").trim() : ""
+          fournisseur: iFourn >= 0 ? String(row[iFourn]||"").trim() : "",
+          code: iCode >= 0 ? String(row[iCode]||"").trim() : "",
+          famille: iFam >= 0 ? String(row[iFam]||"").trim() : ""
         };
-      }).filter(p => p.nom && p.prix_achat > 0);
+      }).filter(Boolean);
 
       // Écraser l'ancienne mercuriale
       MERCURIALE_ACTIVE = newMerc;
@@ -1116,25 +1136,58 @@ function normalizeStr(s) {
     .replace(/œ/g,"oe").replace(/[^a-z0-9 ]/g," ").replace(/  +/g," ").trim();
 }
 
+function similarity(a, b) {
+  // Score de similarité entre deux chaînes normalisées
+  if (a === b) return 1.0;
+  if (a.includes(b) && b.length >= 4) return 0.9;
+  if (b.includes(a) && a.length >= 4) return 0.9;
+  // Comparer mot par mot — tous les mots significatifs doivent matcher
+  const wa = a.split(" ").filter(w => w.length > 2);
+  const wb = b.split(" ").filter(w => w.length > 2);
+  if (!wa.length || !wb.length) return 0;
+  const common = wa.filter(w => wb.includes(w));
+  // Score = mots communs / max des deux listes
+  return common.length / Math.max(wa.length, wb.length);
+}
+
 function findInMercuriale(nomIngredient) {
   const nom = normalizeStr(nomIngredient);
   if (!nom || nom.length < 2) return null;
-  const words = nom.split(" ").filter(w => w.length > 2);
 
-  // 1. Correspondance exacte
-  let found = MERCURIALE_ACTIVE.find(p => p.nom_lower === nom);
-  if (found) return found;
+  let bestMatch = null;
+  let bestScore = 0;
 
-  // 2. L'un contient l'autre
-  found = MERCURIALE_ACTIVE.find(p => nom.includes(p.nom_lower) || p.nom_lower.includes(nom));
-  if (found) return found;
+  for (const p of MERCURIALE_ACTIVE) {
+    const score = similarity(nom, p.nom_lower);
+    // Seuil strict : au moins 0.8 ET les mots principaux doivent tous matcher
+    if (score > bestScore && score >= 0.8) {
+      bestScore = score;
+      bestMatch = p;
+    }
+  }
 
-  // 3. Au moins un mot commun significatif
-  found = MERCURIALE_ACTIVE.find(p => {
-    const pw = p.nom_lower.split(" ").filter(w => w.length > 2);
-    return words.some(w => pw.includes(w));
-  });
-  return found || null;
+  if (!bestMatch) return null;
+
+  // Règle 1 : le premier mot significatif de l'ingrédient doit matcher le premier mot de la mercuriale
+  const nomWords  = nom.split(" ").filter(w => w.length > 3);
+  const matchWords = bestMatch.nom_lower.split(" ").filter(w => w.length > 3);
+  if (nomWords.length > 0 && matchWords.length > 0) {
+    if (!matchWords.includes(nomWords[0]) && !nomWords[0].includes(matchWords[0]) && !matchWords[0].includes(nomWords[0])) {
+      return null;
+    }
+  }
+
+  // Règle 2 : si l'ingrédient contient un mot qualificatif qui change le produit
+  // (ex: "lait de coco" ≠ "lait", "huile végétale" ≠ "huile olive")
+  // → si la mercuriale est plus courte ET l'ingrédient a des mots supplémentaires → invalider
+  const extraWords = nomWords.filter(w => !matchWords.includes(w));
+  if (extraWords.length > 0 && nomWords.length > matchWords.length) {
+    // L'ingrédient a des qualificatifs supplémentaires → probablement un produit différent
+    // Sauf si le score est parfait (0.9+)
+    if (bestScore < 0.9) return null;
+  }
+
+  return bestMatch;
 }
 
 function applyMercuriale(ings) {
