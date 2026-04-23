@@ -944,11 +944,13 @@ function renderFiches(plats, cfg) {
       div.innerHTML = `<div class="fiche-head"><div><div class="fiche-nom">${esc(plat.nom)}</div><div class="fiche-cat">${esc(plat.categorie)}</div></div></div>
         <div class="fiche-body"><div class="err-box">Erreur de génération.${f.msg ? " " + f.msg : ""}</div></div>`;
     } else {
-      // Appliquer la mercuriale : remplace les prix IA par les vrais prix d'achat
-      const ingsRaw = (f.ingredients || []).map((ing, i) => ({ ...ing, _id: i }));
-      const ingsWithMerc = applyMercuriale(ingsRaw);
-      const ings = ingsWithMerc;
-      fichesIngs[String(plat.id)] = ings;
+      // Utiliser fichesIngs existant si dispo (modifications en cours), sinon reconstruire
+      let ings = fichesIngs[String(plat.id)];
+      if (!ings || ings.length === 0) {
+        const ingsRaw = (f.ingredients || []).map((ing, i) => ({ ...ing, _id: i }));
+        ings = applyMercuriale(ingsRaw);
+        fichesIngs[String(plat.id)] = ings;
+      }
       div.innerHTML = buildFicheHTML(plat, f, ings, cfg);
       attachIngListeners(div, plat.id, ings, cfg, plat);
     }
