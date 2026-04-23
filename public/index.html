@@ -364,6 +364,9 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 
 /* ── DROPDOWN MERCURIALE ── */
 .merc-wrap2 { position: relative; width: 100%; display: flex; align-items: center; gap: 6px; padding: 4px 6px; }
+.btn-del-line { width: 22px; height: 22px; flex-shrink: 0; background: #2a1a1a; border: 1px solid #663333; color: #e74c3c; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; font-family: Arial,sans-serif; }
+.btn-del-line:hover { background: #3a1a1a; }
+@media print { .btn-del-line { display: none !important; } }
 .merc-badge { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; cursor: help; }
 .merc-badge.ok  { background: #4caf50; box-shadow: 0 0 5px #4caf50; }
 .merc-badge.ko  { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; }
@@ -982,14 +985,16 @@ function buildFicheHTML(plat, fiche, ings, cfg) {
       </div>
       <table class="ing" id="ing-table-${plat.id}">
         <thead><tr>
-          <th style="width:22%">Ingrédient</th>
+          <th style="width:21%">Ingrédient</th>
           <th class="r" style="width:9%">Qté brute</th>
           <th style="width:6%;text-align:center">Unité</th>
-          <th class="r" style="width:8%">% perte</th>
+          <th class="r" style="width:7%">% perte</th>
           <th class="r" style="width:9%">Qté nette</th>
-          <th class="r" style="width:13%">Prix/kg ou L (€)</th>
-          <th class="r" style="width:12%">Prix U. HT (€/u)</th>
-          <th class="r" style="width:11%">Total HT</th>
+          <th class="r" style="width:12%">Prix/kg ou L (€)</th>
+          <th class="r" style="width:11%">Prix U. HT (€/u)</th>
+          <th class="r" style="width:10%">Total HT</th>
+          <th class="no-print" style="width:4%;text-align:center"></th>
+          <th style="width:4%;text-align:center" class="no-print">✕</th>
         </tr></thead>
         <tbody id="ing-body-${plat.id}">
           ${ings.map(ing => ingRow(ing)).join("")}
@@ -1099,6 +1104,9 @@ function ingRow(ing) {
     <td><input class="ing-input" data-field="prix_kg" type="number" min="0" step="0.001" value="${pkv.toFixed(3)}" style="background:rgba(255,248,225,0.1)"></td>
     <td><div class="cell-ro" data-prix-u="${ing._id}">${eurFmt(ing.prix_unitaire_ht)}</div></td>
     <td><div class="cell-ro" data-total-ht="${ing._id}">${eurFmt(ing.total_ht)}</div></td>
+    <td class="no-print" style="text-align:center;padding:0">
+      <button class="btn-del-line" data-del-id="${ing._id}" title="Supprimer cette ligne">✕</button>
+    </td>
   </tr>`;
 }
 
@@ -1230,6 +1238,26 @@ function attachIngListeners(container, platId, ings, cfg, plat) {
     }
   });
 
+  // Suppression d'une ligne
+  tbody.addEventListener("click", e => {
+    const btn = e.target.closest(".btn-del-line");
+    if (!btn) return;
+    const id = parseInt(btn.dataset.delId);
+    const idx = ings.findIndex(i => i._id === id);
+    if (idx < 0) return;
+    ings.splice(idx, 1);
+    fichesIngs[platId] = ings;
+    btn.closest("tr").remove();
+    // Recalculer les totaux
+    const total = ings.reduce((s, i) => s + (parseFloat(i.total_ht) || 0), 0);
+    const couvert = cfg.couverts > 0 ? total / cfg.couverts : 0;
+    const telHt = document.getElementById("total-ht-" + platId);
+    const couEl = document.getElementById("cout-couvert-" + platId);
+    if (telHt) telHt.textContent = eurFmt(total);
+    if (couEl) couEl.textContent = eurFmt(couvert);
+    recalcPrixVente(platId);
+  });
+
   tbody.addEventListener("change", e => {
     const input = e.target;
     if (!input.classList.contains("ing-select")) return;
@@ -1328,6 +1356,23 @@ function addIngLine(platId, btn) {
 }
 
 function attachSingleRow(tr, platId, ing, ings, cfg) {
+  // Bouton supprimer
+  const delBtn = tr.querySelector(".btn-del-line");
+  if (delBtn) {
+    delBtn.addEventListener("click", () => {
+      const idx = ings.findIndex(i => i._id === ing._id);
+      if (idx >= 0) ings.splice(idx, 1);
+      fichesIngs[platId] = ings;
+      tr.remove();
+      const total = ings.reduce((s,i) => s+(parseFloat(i.total_ht)||0), 0);
+      const couvert = cfg.couverts > 0 ? total/cfg.couverts : 0;
+      const telHt = document.getElementById("total-ht-"+platId);
+      const couEl = document.getElementById("cout-couvert-"+platId);
+      if (telHt) telHt.textContent = eurFmt(total);
+      if (couEl) couEl.textContent = eurFmt(couvert);
+      recalcPrixVente(platId);
+    });
+  }
   const si = tr.querySelector(".merc-search");
   const rd = tr.querySelector(".merc-results");
   if (si && rd) {
