@@ -1529,12 +1529,9 @@ async function sauvegarderFiches() {
   const biblio = await loadBiblio();
   let saved = 0;
 
-  console.log("=== SAUVEGARDE ===");
-  console.log("fichesIngs keys:", Object.keys(fichesIngs));
   plats.forEach(plat => {
-    const fiche = fiches[plat.id];
+    const fiche = fiches[String(plat.id)];
     const ings  = fichesIngs[String(plat.id)];
-    console.log("Plat:", plat.nom, "id:", plat.id, "ings count:", ings ? ings.length : "null");
     if (!fiche || fiche.error) return;
 
     // Vérifier si une fiche avec le même nom existe déjà
@@ -1652,10 +1649,11 @@ async function ouvrirFiche(ficheId) {
   const record = biblio.find(f => f.id === ficheId);
   if (!record) return;
 
-  // Restaurer l'état
-  carte = [{ ...record.plat, id: record.plat.id || nextId++, status: "validated" }];
-  fiches[record.plat.id] = record.fiche;
-  fichesIngs[record.plat.id] = JSON.parse(JSON.stringify(record.ings));
+  // Restaurer l'état — normaliser l'id en string partout
+  const rid = String(record.plat.id || nextId++);
+  carte = [{ ...record.plat, id: rid, status: "validated" }];
+  fiches[rid] = record.fiche;
+  fichesIngs[rid] = JSON.parse(JSON.stringify(record.ings));
 
   // Restaurer la config
   const etabSel = document.getElementById("cfg-etab");
@@ -1681,7 +1679,7 @@ async function ouvrirFiche(ficheId) {
 
     // Restaurer le taux de marge
     setTimeout(() => {
-      const margeEl = document.getElementById("marge-" + record.plat.id);
+      const margeEl = document.getElementById("marge-" + rid);
       if (margeEl) {
         margeEl.value = record.marge || 70;
         recalcPrixVente(record.plat.id);
