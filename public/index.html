@@ -190,6 +190,24 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 .ing-select:focus { background: rgba(155,35,53,0.18); }
 @media print { .ing-select { background: transparent !important; color: #000 !important; border: none !important; font-size: 10px !important; } }
 
+/* ── DROPDOWN MERCURIALE ── */
+.merc-wrap { position: relative; width: 100%; }
+.merc-search { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 22px 7px 8px; cursor: text; }
+.merc-search:focus { background: rgba(155,35,53,0.12); }
+.merc-icon { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #4caf50; pointer-events: none; }
+.merc-icon.warn { color: #e74c3c; }
+.merc-icon.searching { color: #f0a030; }
+.merc-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #1e1e1e; border: 1px solid #9b2335; z-index: 1000; max-height: 220px; overflow-y: auto; box-shadow: 0 4px 16px rgba(0,0,0,0.6); display: none; }
+.merc-dropdown.open { display: block; }
+.merc-item { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #2a2a2a; transition: background 0.1s; }
+.merc-item:hover { background: #2a2a2a; }
+.merc-item:last-child { border-bottom: none; }
+.merc-item-nom { font-size: 12px; font-weight: bold; color: #fff; }
+.merc-item-detail { font-size: 10px; color: #888; margin-top: 2px; }
+.merc-item-prix { font-size: 11px; color: #7ec8a0; font-weight: bold; float: right; margin-top: 1px; }
+.merc-no-result { padding: 10px; font-size: 11px; color: #666; text-align: center; font-style: italic; }
+@media print { .merc-dropdown { display: none !important; } .merc-icon { display: none !important; } }
+
 .etapes { list-style: none; }
 .etape { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid #2a2a2a; }
 .etape:last-child { border-bottom: none; }
@@ -267,6 +285,20 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
   .marge-input { background: transparent !important; border: 1px solid #ccc !important; color: #000 !important; }
   .pdf-print-btn { display: none !important; }
 }
+
+/* ── DROPDOWN MERCURIALE ── */
+.merc-dropdown { position: relative; width: 100%; }
+.merc-search { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 22px 7px 8px; cursor: text; }
+.merc-search:focus { background: rgba(74,122,207,0.12); }
+.merc-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 999; background: #1e1e1e; border: 1px solid var(--blue); max-height: 220px; overflow-y: auto; box-shadow: 0 4px 16px rgba(0,0,0,0.6); display: none; }
+.merc-results.open { display: block; }
+.merc-item { padding: 7px 10px; cursor: pointer; border-bottom: 1px solid #2a2a2a; font-size: 11px; line-height: 1.4; }
+.merc-item:hover, .merc-item.active { background: rgba(74,122,207,0.25); }
+.merc-item-nom { color: #fff; font-weight: bold; }
+.merc-item-detail { color: #888; font-size: 10px; margin-top: 2px; }
+.merc-item-prix { color: #7ec8a0; font-weight: bold; }
+.merc-item-none { padding: 8px 10px; color: #666; font-size: 11px; font-style: italic; }
+@media print { .merc-results { display: none !important; } .merc-search { background: transparent !important; font-size: 10px !important; } }
 </style>
 </head>
 <body>
@@ -873,14 +905,20 @@ function prixColLabel(unite) {
 }
 
 function ingRow(ing) {
-  const pkv = prixKgVal(ing); // cet appel peut corriger ing.prix_unitaire_ht si nécessaire
+  const pkv = prixKgVal(ing);
   const u = uniteLabel(ing.unite);
   const unites = ["g","kg","ml","l","pce","botte","tranche"];
   const opts = unites.map(opt => `<option value="${opt}"${u===opt?" selected":""}>${opt}</option>`).join("");
+  const mercBadge = ing._merc
+    ? `<span title="${esc(ing._merc)}" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#4caf50;font-size:10px;cursor:help">✓</span>`
+    : `<span title="Hors mercuriale" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#e74c3c;font-size:10px;cursor:help">⚠</span>`;
   return `<tr data-id="${ing._id}">
-    <td style="position:relative">
-      <input class="ing-input left" data-field="nom" value="${esc(ing.nom || "")}">
-      ${ing._merc ? '<span title="'+esc(ing._merc)+'" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#4caf50;font-size:9px;cursor:help">✓</span>' : '<span title="Non trouvé dans la mercuriale" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#e74c3c;font-size:9px;cursor:help">⚠</span>'}
+    <td style="position:relative;overflow:visible">
+      <div class="merc-dropdown" data-ingid="${ing._id}">
+        <input class="merc-search" data-field="nom" placeholder="${esc(ing.nom || 'Rechercher...')}" value="${esc(ing.nom || '')}" autocomplete="off">
+        <div class="merc-results" id="merc-res-${ing._id}"></div>
+      </div>
+      ${mercBadge}
     </td>
     <td><input class="ing-input" data-field="qte_brute" type="number" min="0" step="0.01" value="${ing.qte_brute || 0}"></td>
     <td><select class="ing-select" data-field="unite">${opts}</select></td>
@@ -892,9 +930,122 @@ function ingRow(ing) {
   </tr>`;
 }
 
+function applyMercLine(match, ing, tr, platId, ings, cfg) {
+  // Applique un produit mercuriale sélectionné à une ligne ingrédient
+  const u = match.unite;
+  const unites = ["g","kg","ml","l","pce","botte","tranche"];
+  ing.prix_unitaire_ht = match.prix_unitaire;
+  ing.unite = u;
+  ing._merc = match.nom + " · " + match.fournisseur + " · " + match.prix_achat + " €/" + match.unite;
+
+  // Mettre à jour l'unité dans le select
+  const sel = tr.querySelector(".ing-select");
+  if (sel) { sel.value = u; }
+
+  // Mettre à jour prix/kg
+  const pkEl = tr.querySelector("[data-field='prix_kg']");
+  if (pkEl) pkEl.value = prixKgVal(ing).toFixed(3);
+
+  // Recalculer
+  const b = parseFloat(ing.qte_brute) || 0;
+  const d = parseFloat(ing.perte_pct) || 0;
+  ing.qte_nette = parseFloat((b*(1-d/100)).toFixed(2));
+  ing.total_ht  = parseFloat((b * ing.prix_unitaire_ht).toFixed(3));
+  tr.querySelector("[data-qte-nette]").textContent = ing.qte_nette;
+  const puEl = tr.querySelector("[data-prix-u]");
+  if (puEl) puEl.textContent = eurFmt(ing.prix_unitaire_ht);
+  tr.querySelector("[data-total-ht]").textContent = eurFmt(ing.total_ht);
+
+  // Badge
+  const badge = tr.querySelector("td:first-child span");
+  if (badge) { badge.textContent = "✓"; badge.style.color = "#4caf50"; badge.title = ing._merc; }
+
+  fichesIngs[platId] = ings;
+  const total = ings.reduce((s,i) => s+(parseFloat(i.total_ht)||0), 0);
+  const couvert = cfg.couverts > 0 ? total/cfg.couverts : 0;
+  document.getElementById("total-ht-"+platId).textContent = eurFmt(total);
+  document.getElementById("cout-couvert-"+platId).textContent = eurFmt(couvert);
+  recalcPrixVente(platId);
+}
+
+function showMercResults(input, resDiv, ingId, ing, tr, platId, ings, cfg) {
+  const q = normalizeStr(input.value);
+  resDiv.innerHTML = "";
+
+  // Filtrer la mercuriale selon la saisie
+  const matches = q.length < 1
+    ? MERCURIALE_ACTIVE.slice(0, 40)  // afficher les 40 premiers si vide
+    : MERCURIALE_ACTIVE.filter(p =>
+        p.nom_lower.includes(q) ||
+        normalizeStr(p.fournisseur).includes(q) ||
+        normalizeStr(p.famille).includes(q)
+      ).slice(0, 40);
+
+  if (!matches.length) {
+    resDiv.innerHTML = '<div class="merc-item-none">Aucun produit trouvé — prix à saisir manuellement</div>';
+  } else {
+    matches.forEach(match => {
+      const div = document.createElement("div");
+      div.className = "merc-item";
+      const prixLabel = match.prix_achat + " €/" + match.unite;
+      div.innerHTML = `<div class="merc-item-nom">${esc(match.nom)}</div>
+        <div class="merc-item-detail">${esc(match.famille)} · ${esc(match.fournisseur)} · <span class="merc-item-prix">${prixLabel}</span></div>`;
+      div.addEventListener("mousedown", e => {
+        e.preventDefault();
+        input.value = match.nom;
+        ing.nom = match.nom;
+        resDiv.classList.remove("open");
+        applyMercLine(match, ing, tr, platId, ings, cfg);
+      });
+      resDiv.appendChild(div);
+    });
+  }
+  resDiv.classList.add("open");
+}
+
 function attachIngListeners(container, platId, ings, cfg, plat) {
   const tbody = container.querySelector("#ing-body-" + platId);
   if (!tbody) return;
+
+  // ── Dropdown mercuriale ──
+  tbody.addEventListener("focus", e => {
+    if (!e.target.classList.contains("merc-search")) return;
+    const tr = e.target.closest("tr");
+    const id = parseInt(tr.dataset.id);
+    const ing = ings.find(i => i._id === id);
+    if (!ing) return;
+    const resDiv = tr.querySelector(".merc-results");
+    showMercResults(e.target, resDiv, id, ing, tr, platId, ings, cfg);
+  }, true);
+
+  tbody.addEventListener("input", e => {
+    if (!e.target.classList.contains("merc-search")) return;
+    const tr = e.target.closest("tr");
+    const id = parseInt(tr.dataset.id);
+    const ing = ings.find(i => i._id === id);
+    if (!ing) return;
+    ing.nom = e.target.value;
+    const resDiv = tr.querySelector(".merc-results");
+    showMercResults(e.target, resDiv, id, ing, tr, platId, ings, cfg);
+  });
+
+  tbody.addEventListener("blur", e => {
+    if (!e.target.classList.contains("merc-search")) return;
+    setTimeout(() => {
+      const tr = e.target.closest("tr");
+      if (!tr) return;
+      const resDiv = tr.querySelector(".merc-results");
+      if (resDiv) resDiv.classList.remove("open");
+    }, 200);
+  }, true);
+
+  // Fermer si clic ailleurs
+  document.addEventListener("click", e => {
+    if (!e.target.closest(".merc-dropdown")) {
+      tbody.querySelectorAll(".merc-results.open").forEach(d => d.classList.remove("open"));
+    }
+  });
+
   tbody.addEventListener("change", e => {
     const input = e.target;
     if (!input.classList.contains("ing-select")) return;
