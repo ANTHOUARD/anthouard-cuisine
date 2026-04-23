@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anthouard Collection — Cuisine IA</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
   --red: #9b2335; --darkred: #7a1c28; --redlight: #c0392b;
@@ -62,6 +63,13 @@ body { background: var(--bg); color: var(--text); font-family: Arial, Helvetica,
 .user-badge { font-size: 10px; font-weight: bold; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
 .btn-logout { padding: 5px 10px; background: none; border: 1px solid var(--border2); color: var(--text3); font-size: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; font-family: Arial, sans-serif; }
 .btn-logout:hover { border-color: var(--red); color: var(--red); }
+.merc-bar { background: #1a2a1a; border-bottom: 1px solid #2a4a2a; padding: 8px 32px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.merc-status { font-size: 10px; color: #7ec8a0; font-weight: bold; }
+.merc-status.warn { color: #f0a030; }
+.merc-count { font-size: 10px; color: #4a7a4a; }
+.btn-merc { padding: 5px 12px; background: none; border: 1px solid #4caf50; color: #4caf50; font-family: Arial,sans-serif; font-size: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.btn-merc:hover { background: #1e4a1e; }
+#merc-file-input { display: none; }
 
 .inner { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
 
@@ -288,6 +296,15 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
       <div class="dot"></div>
       <button class="btn-logout" id="logout-btn">Déconnexion</button>
     </div>
+  </div>
+
+  <!-- BARRE MERCURIALE -->
+  <div class="merc-bar" id="merc-bar">
+    <span id="merc-status" class="merc-status">✓ Mercuriale chargée</span>
+    <span id="merc-count" class="merc-count"></span>
+    <input type="file" id="merc-file-input" accept=".xlsx,.xls">
+    <button class="btn-merc" onclick="document.getElementById('merc-file-input').click()">⬆ Mettre à jour la mercuriale (.xlsx)</button>
+    <span id="merc-update-msg" style="font-size:10px;color:#7aacff;display:none"></span>
   </div>
 
   <div class="inner">
@@ -693,14 +710,14 @@ async function genererFiches() {
 
     const prompt =
       "Tu es chef cuisinier expert. Fiche technique pour : " + plat.nom +
-      ". Categorie : " + plat.categorie +
-      ". Budget cout matiere : " + cfg.budget + " euro HT par assiette. " +
-      "Max 8 ingredients. Max 5 etapes de 15 mots max. Valeurs numeriques = nombres JS. " +
-      "Prix en euros par unite (gramme, ml ou piece). " +
+      ". Categorie : " + plat.categorie + ". " +
+      "Max 8 ingredients. Max 5 etapes de 15 mots max chacune. " +
+      "Valeurs numeriques = nombres JS. NE MET PAS DE PRIX - mets 0 pour prix_unitaire_ht et total_ht. " +
+      "Les unites doivent etre : g, kg, ml, l, ou pce. " +
       "Reponds UNIQUEMENT avec ce JSON (zero texte, zero backtick) : " +
-      '{"ingredients":[{"nom":"Beurre","qte_brute":50,"unite":"g","perte_pct":0,"qte_nette":50,"prix_unitaire_ht":0.008,"total_ht":0.40}],' +
+      '{"ingredients":[{"nom":"Beurre","qte_brute":50,"unite":"g","perte_pct":0,"qte_nette":50,"prix_unitaire_ht":0,"total_ht":0}],' +
       '"etapes":["Etape 1","Etape 2"],"allergenes":["Lait"],' +
-      '"conservation":"3 jours 4C","temp_service":"65C","cout_total_ht":2.50,"cout_par_couvert_ht":2.50}';
+      '"conservation":"3 jours 4C","temp_service":"65C","cout_total_ht":0,"cout_par_couvert_ht":0}';
 
     try {
       const raw = await callClaude([{ role: "user", content: prompt }], 2000);
@@ -726,21 +743,10 @@ function renderFiches(plats, cfg) {
       div.innerHTML = `<div class="fiche-head"><div><div class="fiche-nom">${esc(plat.nom)}</div><div class="fiche-cat">${esc(plat.categorie)}</div></div></div>
         <div class="fiche-body"><div class="err-box">Erreur de génération.${f.msg ? " " + f.msg : ""}</div></div>`;
     } else {
-      const ings = (f.ingredients || []).map((ing, i) => {
-        const base = { ...ing, _id: i };
-        const u = (base.unite || "").toLowerCase();
-        const prixU = parseFloat(base.prix_unitaire_ht) || 0;
-        // Normaliser prix_unitaire_ht : l'IA donne parfois le prix au kg plutôt qu'à l'unité
-        // On recalcule toujours depuis prix_unitaire_ht tel que fourni par l'IA
-        // et on s'assure que total_ht est cohérent
-        const b = parseFloat(base.qte_brute) || 0;
-        const d = parseFloat(base.perte_pct) || 0;
-        base.qte_nette = parseFloat((b * (1 - d / 100)).toFixed(2));
-        // Si prix_unitaire_ht semble être un prix au kg (>1 pour du g), corriger
-        // Sinon garder tel quel
-        base.total_ht = parseFloat((b * prixU).toFixed(3));
-        return base;
-      });
+      // Appliquer la mercuriale : remplace les prix IA par les vrais prix d'achat
+      const ingsRaw = (f.ingredients || []).map((ing, i) => ({ ...ing, _id: i }));
+      const ingsWithMerc = applyMercuriale(ingsRaw);
+      const ings = ingsWithMerc;
       fichesIngs[plat.id] = ings;
       div.innerHTML = buildFicheHTML(plat, f, ings, cfg);
       attachIngListeners(div, plat.id, ings, cfg, plat);
@@ -772,7 +778,10 @@ function buildFicheHTML(plat, fiche, ings, cfg) {
     </div>
     <div class="fiche-body">
       <div class="fsec">Ingrédients & grammages</div>
-      <div class="edit-hint">✎ Cliquez sur un grammage ou un prix pour le modifier — les totaux se recalculent automatiquement.</div>
+      <div class="edit-hint">✎ Grammages et prix modifiables. &nbsp;
+        <span style="color:#4caf50">✓ Prix mercuriale appliqué</span> &nbsp;
+        <span style="color:#e74c3c">⚠ Hors mercuriale — saisir le prix/kg manuellement</span>
+      </div>
       <table class="ing" id="ing-table-${plat.id}">
         <thead><tr>
           <th style="width:22%">Ingrédient</th>
@@ -869,7 +878,10 @@ function ingRow(ing) {
   const unites = ["g","kg","ml","l","pce","botte","tranche"];
   const opts = unites.map(opt => `<option value="${opt}"${u===opt?" selected":""}>${opt}</option>`).join("");
   return `<tr data-id="${ing._id}">
-    <td><input class="ing-input left" data-field="nom" value="${esc(ing.nom || "")}"></td>
+    <td style="position:relative">
+      <input class="ing-input left" data-field="nom" value="${esc(ing.nom || "")}">
+      ${ing._merc ? '<span title="'+esc(ing._merc)+'" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#4caf50;font-size:9px;cursor:help">✓</span>' : '<span title="Non trouvé dans la mercuriale" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#e74c3c;font-size:9px;cursor:help">⚠</span>'}
+    </td>
     <td><input class="ing-input" data-field="qte_brute" type="number" min="0" step="0.01" value="${ing.qte_brute || 0}"></td>
     <td><select class="ing-select" data-field="unite">${opts}</select></td>
     <td><input class="ing-input" data-field="perte_pct" type="number" min="0" max="100" step="1" value="${ing.perte_pct || 0}"></td>
@@ -1000,6 +1012,157 @@ function resetApp() {
   currentStep = 1;
   goStep(1);
 }
+const MERCURIALE = [{"nom": "4 épices", "nom_lower": "4 epices", "unite": "pce", "prix_achat": 13.0, "prix_unitaire": 13.0, "fournisseur": "SYSCO", "code": "F0086", "famille": "Epicerie"}, {"nom": "Amandes effilées", "nom_lower": "amandes effilees", "unite": "kg", "prix_achat": 9.9, "prix_unitaire": 0.0099, "fournisseur": "SYSCO", "code": "F0001", "famille": "Epicerie"}, {"nom": "Beurre", "nom_lower": "beurre", "unite": "kg", "prix_achat": 10.8, "prix_unitaire": 0.0108, "fournisseur": "SYSCO", "code": "F0002", "famille": "Crémerie"}, {"nom": "Beurre", "nom_lower": "beurre", "unite": "kg", "prix_achat": 6.33, "prix_unitaire": 0.00633, "fournisseur": "SYSCO", "code": "F0096", "famille": "Crémerie"}, {"nom": "Biscuit cuillere", "nom_lower": "biscuit cuillere", "unite": "pce", "prix_achat": 27.0, "prix_unitaire": 27.0, "fournisseur": "SYSCO", "code": "F0075", "famille": "Epicerie"}, {"nom": "Blanc d'œuf", "nom_lower": "blanc d'oeuf", "unite": "l", "prix_achat": 8.73, "prix_unitaire": 0.00873, "fournisseur": "SYSCO", "code": "F0070", "famille": "Produit frais"}, {"nom": "Bœuf", "nom_lower": "boeuf", "unite": "kg", "prix_achat": 32.0, "prix_unitaire": 0.032, "fournisseur": "CENTRALE DES VIANDES", "code": "F0082", "famille": "viande"}, {"nom": "Bombe à graisse", "nom_lower": "bombe a graisse", "unite": "l", "prix_achat": 2.78, "prix_unitaire": 0.00278, "fournisseur": "SYSCO", "code": "F0003", "famille": "Epicerie"}, {"nom": "Burrata", "nom_lower": "burrata", "unite": "pce", "prix_achat": 1.6, "prix_unitaire": 1.6, "fournisseur": "SYSCO", "code": "F0079", "famille": "Crémerie"}, {"nom": "Cabillaud", "nom_lower": "cabillaud", "unite": "kg", "prix_achat": 28.0, "prix_unitaire": 0.028, "fournisseur": "HOMARD ACADIEN", "code": "F0109", "famille": "Poisson"}, {"nom": "Caille", "nom_lower": "caille", "unite": "kg", "prix_achat": 24.0, "prix_unitaire": 0.024, "fournisseur": "CENTRALE DES VIANDES", "code": "F0108", "famille": "viande"}, {"nom": "Cardamone", "nom_lower": "cardamone", "unite": "kg", "prix_achat": 12.5, "prix_unitaire": 0.0125, "fournisseur": "SYSCO", "code": "F0083", "famille": "Epicerie"}, {"nom": "Cassonade", "nom_lower": "cassonade", "unite": "kg", "prix_achat": 4.4, "prix_unitaire": 0.0044, "fournisseur": "SYSCO", "code": "F0004", "famille": "Epicerie"}, {"nom": "Cépes", "nom_lower": "cepes", "unite": "kg", "prix_achat": 11.67, "prix_unitaire": 0.01167, "fournisseur": "COTE FRAIS", "code": "F0005", "famille": "Fruits / Légumes"}, {"nom": "Chair de crabe", "nom_lower": "chair de crabe", "unite": "kg", "prix_achat": 14.0, "prix_unitaire": 0.014, "fournisseur": "HOMARD ACADIEN", "code": "F0006", "famille": "Poisson"}, {"nom": "Champignons", "nom_lower": "champignons", "unite": "kg", "prix_achat": 3.67, "prix_unitaire": 0.00367, "fournisseur": "COTE FRAIS", "code": "F0007", "famille": "Fruits / Légumes"}, {"nom": "Chevre buche", "nom_lower": "chevre buche", "unite": "pce", "prix_achat": 1.9, "prix_unitaire": 1.9, "fournisseur": "SYSCO", "code": "F0099", "famille": "Crémerie"}, {"nom": "Chocolat blanc", "nom_lower": "chocolat blanc", "unite": "kg", "prix_achat": 24.97, "prix_unitaire": 0.02497, "fournisseur": "SYSCO", "code": "F0008", "famille": "Epicerie"}, {"nom": "Chocolat Noir", "nom_lower": "chocolat noir", "unite": "kg", "prix_achat": 36.0, "prix_unitaire": 0.036, "fournisseur": "SYSCO", "code": "F0009", "famille": "Epicerie"}, {"nom": "Choux chinois", "nom_lower": "choux chinois", "unite": "pce", "prix_achat": 2.99, "prix_unitaire": 2.99, "fournisseur": "COTE FRAIS", "code": "F0010", "famille": "Fruits / Légumes"}, {"nom": "Chutney figue", "nom_lower": "chutney figue", "unite": "kg", "prix_achat": 5.81, "prix_unitaire": 0.005809999999999999, "fournisseur": "SYSCO", "code": "F0107", "famille": "Epicerie"}, {"nom": "Clementine", "nom_lower": "clementine", "unite": "kg", "prix_achat": 5.29, "prix_unitaire": 0.00529, "fournisseur": "COTE FRAIS", "code": "F0011", "famille": "Fruits / Légumes"}, {"nom": "Concentrer tomate", "nom_lower": "concentrer tomate", "unite": "kg", "prix_achat": 2.13, "prix_unitaire": 0.00213, "fournisseur": "SYSCO", "code": "F0012", "famille": "Epicerie"}, {"nom": "Confiture", "nom_lower": "confiture", "unite": "kg", "prix_achat": 4.98, "prix_unitaire": 0.00498, "fournisseur": "SYSCO", "code": "F0095", "famille": "Epicerie"}, {"nom": "Conté", "nom_lower": "conte", "unite": "kg", "prix_achat": 19.0, "prix_unitaire": 0.019, "fournisseur": "SYSCO", "code": "F0105", "famille": "Crémerie"}, {"nom": "Coq", "nom_lower": "coq", "unite": "kg", "prix_achat": 5.6, "prix_unitaire": 0.0056, "fournisseur": "HOMARD ACADIEN", "code": "F0016", "famille": "Poisson"}, {"nom": "Cornichon", "nom_lower": "cornichon", "unite": "kg", "prix_achat": 9.4, "prix_unitaire": 0.0094, "fournisseur": "SYSCO", "code": "F0013", "famille": "Epicerie"}, {"nom": "Cramberie", "nom_lower": "cramberie", "unite": "kg", "prix_achat": 12.0, "prix_unitaire": 0.012, "fournisseur": "SYSCO", "code": "F0092", "famille": "Epicerie"}, {"nom": "Crème liquide", "nom_lower": "creme liquide", "unite": "l", "prix_achat": 4.0, "prix_unitaire": 0.004, "fournisseur": "SYSCO", "code": "F0014", "famille": "Crémerie"}, {"nom": "Crevette", "nom_lower": "crevette", "unite": "kg", "prix_achat": 15.8, "prix_unitaire": 0.0158, "fournisseur": "HOMARD ACADIEN", "code": "F0015", "famille": "Poisson"}, {"nom": "Crottin de chavignole", "nom_lower": "crottin de chavignole", "unite": "pce", "prix_achat": 1.67, "prix_unitaire": 1.67, "fournisseur": "SYSCO", "code": "F0097", "famille": "Crémerie"}, {"nom": "Daurade sebaste", "nom_lower": "daurade sebaste", "unite": "kg", "prix_achat": 13.95, "prix_unitaire": 0.013949999999999999, "fournisseur": "HOMARD ACADIEN", "code": "F0074", "famille": "Poisson"}, {"nom": "Dorade/BAR", "nom_lower": "dorade/bar", "unite": "kg", "prix_achat": 17.6, "prix_unitaire": 0.0176, "fournisseur": "HOMARD ACADIEN", "code": "F0017", "famille": "Poisson"}, {"nom": "Emmental râpé", "nom_lower": "emmental rape", "unite": "kg", "prix_achat": 5.6, "prix_unitaire": 0.0056, "fournisseur": "SYSCO", "code": "F0018", "famille": "Crémerie"}, {"nom": "Escalope foie gras", "nom_lower": "escalope foie gras", "unite": "kg", "prix_achat": 56.73, "prix_unitaire": 0.056729999999999996, "fournisseur": "CENTRALE DES VIANDES", "code": "F0019", "famille": "viande"}, {"nom": "Escargots", "nom_lower": "escargots", "unite": "kg", "prix_achat": 14.7, "prix_unitaire": 0.0147, "fournisseur": "SYSCO", "code": "F0111", "famille": "Produit frais"}, {"nom": "Farine", "nom_lower": "farine", "unite": "kg", "prix_achat": 1.19, "prix_unitaire": 0.0011899999999999999, "fournisseur": "SYSCO", "code": "F0020", "famille": "Epicerie"}, {"nom": "Farine à pizza", "nom_lower": "farine a pizza", "unite": "kg", "prix_achat": 0.89, "prix_unitaire": 0.0008900000000000001, "fournisseur": "SYSCO", "code": "F0021", "famille": "Epicerie"}, {"nom": "Faut filet", "nom_lower": "faut filet", "unite": "kg", "prix_achat": 29.0, "prix_unitaire": 0.029, "fournisseur": "CENTRALE DES VIANDES", "code": "F0114", "famille": "viande"}, {"nom": "Feuille de lasagne", "nom_lower": "feuille de lasagne", "unite": "kg", "prix_achat": 2.19, "prix_unitaire": 0.00219, "fournisseur": "SYSCO", "code": "F0022", "famille": "Epicerie"}, {"nom": "Filet de boeuf", "nom_lower": "filet de boeuf", "unite": "kg", "prix_achat": 22.0, "prix_unitaire": 0.022, "fournisseur": "CENTRALE DES VIANDES", "code": "F0023", "famille": "viande"}, {"nom": "Filet de veau", "nom_lower": "filet de veau", "unite": "kg", "prix_achat": 34.8, "prix_unitaire": 0.0348, "fournisseur": "CENTRALE DES VIANDES", "code": "F0024", "famille": "viande"}, {"nom": "Foie gras eveiner", "nom_lower": "foie gras eveiner", "unite": "kg", "prix_achat": 31.47, "prix_unitaire": 0.03147, "fournisseur": "CENTRALE DES VIANDES", "code": "F0025", "famille": "viande"}, {"nom": "Fond brun", "nom_lower": "fond brun", "unite": "kg", "prix_achat": 11.56, "prix_unitaire": 0.01156, "fournisseur": "SYSCO", "code": "F0026", "famille": "Epicerie"}, {"nom": "Fond de tartelette", "nom_lower": "fond de tartelette", "unite": "pce", "prix_achat": 53.22, "prix_unitaire": 53.22, "fournisseur": "SYSCO", "code": "F0027", "famille": "Epicerie"}, {"nom": "Fond de veau", "nom_lower": "fond de veau", "unite": "kg", "prix_achat": 10.5, "prix_unitaire": 0.0105, "fournisseur": "SYSCO", "code": "F0084", "famille": "Epicerie"}, {"nom": "Framboises", "nom_lower": "framboises", "unite": "kg", "prix_achat": 3.55, "prix_unitaire": 0.0035499999999999998, "fournisseur": "COTE FRAIS", "code": "F0028", "famille": "Fruits / Légumes"}, {"nom": "Fromage à raclette", "nom_lower": "fromage a raclette", "unite": "kg", "prix_achat": 13.56, "prix_unitaire": 0.013560000000000001, "fournisseur": "SYSCO", "code": "F0098", "famille": "Crémerie"}, {"nom": "Fromage blanc", "nom_lower": "fromage blanc", "unite": "kg", "prix_achat": 2.29, "prix_unitaire": 0.00229, "fournisseur": "SYSCO", "code": "F0029", "famille": "Crémerie"}, {"nom": "Fumet de poisson", "nom_lower": "fumet de poisson", "unite": "kg", "prix_achat": 9.9, "prix_unitaire": 0.0099, "fournisseur": "SYSCO", "code": "F0030", "famille": "Epicerie"}, {"nom": "Gelatine dorée", "nom_lower": "gelatine doree", "unite": "kg", "prix_achat": 19.9, "prix_unitaire": 0.019899999999999998, "fournisseur": "SYSCO", "code": "F0093", "famille": "Epicerie"}, {"nom": "Glace au noix", "nom_lower": "glace au noix", "unite": "kg", "prix_achat": 18.58, "prix_unitaire": 0.01858, "fournisseur": "SYSCO", "code": "F0102", "famille": "Crémerie"}, {"nom": "Gros sel", "nom_lower": "gros sel", "unite": "kg", "prix_achat": 2.16, "prix_unitaire": 0.00216, "fournisseur": "SYSCO", "code": "F0031", "famille": "Epicerie"}, {"nom": "Guacamol", "nom_lower": "guacamol", "unite": "kg", "prix_achat": 10.0, "prix_unitaire": 0.01, "fournisseur": "SYSCO", "code": "F0032", "famille": "Epicerie"}, {"nom": "Huile olive", "nom_lower": "huile olive", "unite": "l", "prix_achat": 12.0, "prix_unitaire": 0.012, "fournisseur": "SYSCO", "code": "F0033", "famille": "Epicerie"}, {"nom": "Huile tournesol", "nom_lower": "huile tournesol", "unite": "l", "prix_achat": 10.0, "prix_unitaire": 0.01, "fournisseur": "SYSCO", "code": "F0034", "famille": "Epicerie"}, {"nom": "Jambon blanc", "nom_lower": "jambon blanc", "unite": "kg", "prix_achat": 6.2, "prix_unitaire": 0.0062, "fournisseur": "CENTRALE DES VIANDES", "code": "F0087", "famille": "viande"}, {"nom": "Jambon cru", "nom_lower": "jambon cru", "unite": "kg", "prix_achat": 14.84, "prix_unitaire": 0.014839999999999999, "fournisseur": "CENTRALE DES VIANDES", "code": "F0088", "famille": "viande"}, {"nom": "Jambon truffe", "nom_lower": "jambon truffe", "unite": "kg", "prix_achat": 19.0, "prix_unitaire": 0.019, "fournisseur": "CENTRALE DES VIANDES", "code": "F0035", "famille": "viande"}, {"nom": "Jaune d'œuf", "nom_lower": "jaune d'oeuf", "unite": "l", "prix_achat": 7.5, "prix_unitaire": 0.0075, "fournisseur": "SYSCO", "code": "F0071", "famille": "Produit frais"}, {"nom": "Jus de volaille", "nom_lower": "jus de volaille", "unite": "l", "prix_achat": 12.9, "prix_unitaire": 0.0129, "fournisseur": "SYSCO", "code": "F0036", "famille": "Epicerie"}, {"nom": "Ketchup", "nom_lower": "ketchup", "unite": "l", "prix_achat": 3.0, "prix_unitaire": 0.003, "fournisseur": "SYSCO", "code": "F0078", "famille": "Epicerie"}, {"nom": "Kikoman", "nom_lower": "kikoman", "unite": "l", "prix_achat": 6.56, "prix_unitaire": 0.00656, "fournisseur": "SYSCO", "code": "F0037", "famille": "Epicerie"}, {"nom": "Lait", "nom_lower": "lait", "unite": "l", "prix_achat": 1.56, "prix_unitaire": 0.00156, "fournisseur": "SYSCO", "code": "F0038", "famille": "Crémerie"}, {"nom": "Lait concentré", "nom_lower": "lait concentre", "unite": "l", "prix_achat": 1.7, "prix_unitaire": 0.0017, "fournisseur": "SYSCO", "code": "F0039", "famille": "Crémerie"}, {"nom": "Lard Fumée", "nom_lower": "lard fumee", "unite": "kg", "prix_achat": 20.0, "prix_unitaire": 0.02, "fournisseur": "CENTRALE DES VIANDES", "code": "F0089", "famille": "viande"}, {"nom": "Lentilles", "nom_lower": "lentilles", "unite": "kg", "prix_achat": 4.7, "prix_unitaire": 0.0047, "fournisseur": "SYSCO", "code": "F0040", "famille": "Epicerie"}, {"nom": "Lieu noir", "nom_lower": "lieu noir", "unite": "kg", "prix_achat": 16.0, "prix_unitaire": 0.016, "fournisseur": "HOMARD ACADIEN", "code": "F0041", "famille": "Poisson"}, {"nom": "Longe de thon", "nom_lower": "longe de thon", "unite": "kg", "prix_achat": 24.0, "prix_unitaire": 0.024, "fournisseur": "HOMARD ACADIEN", "code": "F0042", "famille": "Poisson"}, {"nom": "Longe de thon", "nom_lower": "longe de thon", "unite": "kg", "prix_achat": 19.0, "prix_unitaire": 0.019, "fournisseur": "HOMARD ACADIEN", "code": "F0090", "famille": "Poisson"}, {"nom": "Magret fumé", "nom_lower": "magret fume", "unite": "kg", "prix_achat": 8.48, "prix_unitaire": 0.00848, "fournisseur": "CENTRALE DES VIANDES", "code": "F0043", "famille": "viande"}, {"nom": "Maizena", "nom_lower": "maizena", "unite": "kg", "prix_achat": 6.42, "prix_unitaire": 0.00642, "fournisseur": "SYSCO", "code": "F0044", "famille": "Epicerie"}, {"nom": "Mascarponne", "nom_lower": "mascarponne", "unite": "kg", "prix_achat": 6.0, "prix_unitaire": 0.006, "fournisseur": "SYSCO", "code": "F0072", "famille": "Epicerie"}, {"nom": "Morillesentiere", "nom_lower": "morillesentiere", "unite": "kg", "prix_achat": 36.6, "prix_unitaire": 0.0366, "fournisseur": "SYSCO", "code": "F0045", "famille": "Epicerie"}, {"nom": "Nems", "nom_lower": "nems", "unite": "pce", "prix_achat": 0.265, "prix_unitaire": 0.265, "fournisseur": "SYSCO", "code": "F0081", "famille": "Produit frais"}, {"nom": "Oeufs", "nom_lower": "oeufs", "unite": "pce", "prix_achat": 0.31, "prix_unitaire": 0.31, "fournisseur": "SYSCO", "code": "F0046", "famille": "Produit frais"}, {"nom": "oeufs de truite", "nom_lower": "oeufs de truite", "unite": "kg", "prix_achat": 9.1, "prix_unitaire": 0.0091, "fournisseur": "SYSCO", "code": "F0073", "famille": "Epicerie"}, {"nom": "Onglet de bœufs", "nom_lower": "onglet de boeufs", "unite": "kg", "prix_achat": 25.0, "prix_unitaire": 0.025, "fournisseur": "CENTRALE DES VIANDES", "code": "F0113", "famille": "viande"}, {"nom": "Orange", "nom_lower": "orange", "unite": "kg", "prix_achat": 2.64, "prix_unitaire": 0.00264, "fournisseur": "COTE FRAIS", "code": "F0047", "famille": "Fruits / Légumes"}, {"nom": "Pain d'épice", "nom_lower": "pain d'epice", "unite": "kg", "prix_achat": 5.7, "prix_unitaire": 0.0057, "fournisseur": "SYSCO", "code": "F0094", "famille": "Epicerie"}, {"nom": "Pain de mie", "nom_lower": "pain de mie", "unite": "kg", "prix_achat": 2.35, "prix_unitaire": 0.00235, "fournisseur": "SYSCO", "code": "F0080", "famille": "Epicerie"}, {"nom": "Parmesan râpé", "nom_lower": "parmesan rape", "unite": "kg", "prix_achat": 8.5, "prix_unitaire": 0.0085, "fournisseur": "SYSCO", "code": "F0048", "famille": "Crémerie"}, {"nom": "Paté croute", "nom_lower": "pate croute", "unite": "kg", "prix_achat": 36.0, "prix_unitaire": 0.036, "fournisseur": "CENTRALE DES VIANDES", "code": "F0115", "famille": "viande"}, {"nom": "Pate feuilleté", "nom_lower": "pate feuillete", "unite": "kg", "prix_achat": 24.0, "prix_unitaire": 0.024, "fournisseur": "SYSCO", "code": "F0110", "famille": "Epicerie"}, {"nom": "Pavé de rumsteck", "nom_lower": "pave de rumsteck", "unite": "kg", "prix_achat": 18.56, "prix_unitaire": 0.01856, "fournisseur": "CENTRALE DES VIANDES", "code": "F0049", "famille": "viande"}, {"nom": "Philadelphia", "nom_lower": "philadelphia", "unite": "kg", "prix_achat": 11.47, "prix_unitaire": 0.011470000000000001, "fournisseur": "SYSCO", "code": "F0050", "famille": "Crémerie"}, {"nom": "Pomme de terre", "nom_lower": "pomme de terre", "unite": "kg", "prix_achat": 1.8, "prix_unitaire": 0.0018, "fournisseur": "COTE FRAIS", "code": "F0051", "famille": "Fruits / Légumes"}, {"nom": "Pomme golden", "nom_lower": "pomme golden", "unite": "kg", "prix_achat": 2.45, "prix_unitaire": 0.0024500000000000004, "fournisseur": "COTE FRAIS", "code": "F0091", "famille": "Fruits / Légumes"}, {"nom": "Poudre d'amandes", "nom_lower": "poudre d'amandes", "unite": "kg", "prix_achat": 9.12, "prix_unitaire": 0.00912, "fournisseur": "SYSCO", "code": "F0052", "famille": "Epicerie"}, {"nom": "Praliné", "nom_lower": "praline", "unite": "kg", "prix_achat": 8.2, "prix_unitaire": 0.008199999999999999, "fournisseur": "SYSCO", "code": "F0053", "famille": "Epicerie"}, {"nom": "Queue écrevisse", "nom_lower": "queue ecrevisse", "unite": "kg", "prix_achat": 36.5, "prix_unitaire": 0.0365, "fournisseur": "HOMARD ACADIEN", "code": "F0054", "famille": "Poisson"}, {"nom": "Ris d'agneau", "nom_lower": "ris d'agneau", "unite": "kg", "prix_achat": 19.9, "prix_unitaire": 0.019899999999999998, "fournisseur": "CENTRALE DES VIANDES", "code": "F0055", "famille": "viande"}, {"nom": "Riz noir", "nom_lower": "riz noir", "unite": "kg", "prix_achat": 4.69, "prix_unitaire": 0.004690000000000001, "fournisseur": "SYSCO", "code": "F0056", "famille": "Epicerie"}, {"nom": "Riz rond", "nom_lower": "riz rond", "unite": "kg", "prix_achat": 4.2, "prix_unitaire": 0.004200000000000001, "fournisseur": "SYSCO", "code": "F0057", "famille": "Epicerie"}, {"nom": "Rond de gîte", "nom_lower": "rond de gite", "unite": "kg", "prix_achat": 14.23, "prix_unitaire": 0.01423, "fournisseur": "CENTRALE DES VIANDES", "code": "F0058", "famille": "viande"}, {"nom": "Rosette", "nom_lower": "rosette", "unite": "kg", "prix_achat": 10.8, "prix_unitaire": 0.0108, "fournisseur": "CENTRALE DES VIANDES", "code": "F0106", "famille": "viande"}, {"nom": "Salade de fruit", "nom_lower": "salade de fruit", "unite": "kg", "prix_achat": 4.0, "prix_unitaire": 0.004, "fournisseur": "COTE FRAIS", "code": "F0101", "famille": "Fruits / Légumes"}, {"nom": "Satay épice", "nom_lower": "satay epice", "unite": "pce", "prix_achat": 12.0, "prix_unitaire": 12.0, "fournisseur": "SYSCO", "code": "F0085", "famille": "Epicerie"}, {"nom": "Sauce barbecue", "nom_lower": "sauce barbecue", "unite": "l", "prix_achat": 3.8, "prix_unitaire": 0.0038, "fournisseur": "SYSCO", "code": "F0077", "famille": "Epicerie"}, {"nom": "Sauce truffe", "nom_lower": "sauce truffe", "unite": "kg", "prix_achat": 11.7, "prix_unitaire": 0.011699999999999999, "fournisseur": "SYSCO", "code": "F0059", "famille": "Epicerie"}, {"nom": "Saumon", "nom_lower": "saumon", "unite": "kg", "prix_achat": 17.0, "prix_unitaire": 0.017, "fournisseur": "HOMARD ACADIEN", "code": "F0060", "famille": "Poisson"}, {"nom": "Saumon fumé", "nom_lower": "saumon fume", "unite": "kg", "prix_achat": 29.0, "prix_unitaire": 0.029, "fournisseur": "HOMARD ACADIEN", "code": "F0061", "famille": "Poisson"}, {"nom": "Shitake", "nom_lower": "shitake", "unite": "kg", "prix_achat": 4.6, "prix_unitaire": 0.0046, "fournisseur": "SYSCO", "code": "F0062", "famille": "Epicerie"}, {"nom": "St Jacques", "nom_lower": "st jacques", "unite": "kg", "prix_achat": 32.0, "prix_unitaire": 0.032, "fournisseur": "HOMARD ACADIEN", "code": "F0103", "famille": "Poisson"}, {"nom": "St marcelin", "nom_lower": "st marcelin", "unite": "pce", "prix_achat": 1.64, "prix_unitaire": 1.64, "fournisseur": "SYSCO", "code": "F0104", "famille": "Crémerie"}, {"nom": "Sucre semoule", "nom_lower": "sucre semoule", "unite": "kg", "prix_achat": 2.06, "prix_unitaire": 0.00206, "fournisseur": "SYSCO", "code": "F0063", "famille": "Epicerie"}, {"nom": "Suprême volaille", "nom_lower": "supreme volaille", "unite": "kg", "prix_achat": 9.9, "prix_unitaire": 0.0099, "fournisseur": "CENTRALE DES VIANDES", "code": "F0064", "famille": "viande"}, {"nom": "Tartare couteau", "nom_lower": "tartare couteau", "unite": "kg", "prix_achat": 19.0, "prix_unitaire": 0.019, "fournisseur": "CENTRALE DES VIANDES", "code": "F0076", "famille": "viande"}, {"nom": "Tarte tatin", "nom_lower": "tarte tatin", "unite": "pce", "prix_achat": 26.1, "prix_unitaire": 26.1, "fournisseur": "SYSCO", "code": "F0065", "famille": "Produit frais"}, {"nom": "Tempura", "nom_lower": "tempura", "unite": "kg", "prix_achat": 36.0, "prix_unitaire": 0.036, "fournisseur": "HOMARD ACADIEN", "code": "F0112", "famille": "Poisson"}, {"nom": "Terrine de foie gras", "nom_lower": "terrine de foie gras", "unite": "kg", "prix_achat": 54.0, "prix_unitaire": 0.054, "fournisseur": "CENTRALE DES VIANDES", "code": "F0066", "famille": "viande"}, {"nom": "Trompette", "nom_lower": "trompette", "unite": "kg", "prix_achat": 34.0, "prix_unitaire": 0.034, "fournisseur": "COTE FRAIS", "code": "F0067", "famille": "Fruits / Légumes"}, {"nom": "Vinaigre balsamique", "nom_lower": "vinaigre balsamique", "unite": "l", "prix_achat": 3.1, "prix_unitaire": 0.0031, "fournisseur": "SYSCO", "code": "F0068", "famille": "Epicerie"}, {"nom": "Vinaigre blanc", "nom_lower": "vinaigre blanc", "unite": "l", "prix_achat": 1.76, "prix_unitaire": 0.00176, "fournisseur": "SYSCO", "code": "F0069", "famille": "Epicerie"}, {"nom": "Yaourt de sovoie", "nom_lower": "yaourt de sovoie", "unite": "pce", "prix_achat": 0.6, "prix_unitaire": 0.6, "fournisseur": "SYSCO", "code": "F0100", "famille": "Crémerie"}];
+
+// ─── MERCURIALE ───────────────────────────────────────────────────────────────
+// Mercuriale active (initialisée depuis la base intégrée, remplaçable via upload)
+let MERCURIALE_ACTIVE = [...MERCURIALE];
+
+function initMercurialeUI() {
+  // Charger depuis localStorage si dispo (mise à jour précédente)
+  const saved = localStorage.getItem("anthouard_mercuriale");
+  if (saved) {
+    try {
+      MERCURIALE_ACTIVE = JSON.parse(saved);
+      console.log("Mercuriale chargée depuis localStorage:", MERCURIALE_ACTIVE.length, "produits");
+    } catch(e) {
+      MERCURIALE_ACTIVE = [...MERCURIALE];
+    }
+  }
+  updateMercurialeStatus();
+}
+
+function updateMercurialeStatus() {
+  const el = document.getElementById("merc-count");
+  if (el) el.textContent = MERCURIALE_ACTIVE.length + " produits";
+}
+
+// Gérer l'upload du fichier Excel
+document.addEventListener("DOMContentLoaded", () => {
+  initMercurialeUI();
+
+  const fileInput = document.getElementById("merc-file-input");
+  if (!fileInput) return;
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const msgEl = document.getElementById("merc-update-msg");
+    const statusEl = document.getElementById("merc-status");
+    msgEl.textContent = "Lecture en cours…";
+    msgEl.style.display = "inline";
+
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+
+      if (!rows.length) throw new Error("Fichier vide");
+
+      // Détecter les colonnes (flexible)
+      const first = rows[0];
+      const keys = Object.keys(first);
+      const colNom    = keys.find(k => k.toLowerCase().includes("lib") || k.toLowerCase().includes("nom") || k.toLowerCase().includes("produit"));
+      const colPrix   = keys.find(k => k.toLowerCase().includes("prix"));
+      const colUnite  = keys.find(k => k.toLowerCase().includes("unit"));
+      const colFourn  = keys.find(k => k.toLowerCase().includes("fourn"));
+      const colCode   = keys.find(k => k.toLowerCase().includes("code"));
+      const colFamille= keys.find(k => k.toLowerCase().includes("famil"));
+
+      if (!colNom || !colPrix) throw new Error("Colonnes 'Libellé Produit' et 'Prix d\'achat' requises");
+
+      const newMerc = rows.map(row => {
+        const nom   = String(row[colNom] || "").trim();
+        const unite = String(row[colUnite] || "kg").trim();
+        const prix  = parseFloat(row[colPrix]) || 0;
+        const u_norm = unite.toLowerCase().includes("pi") || unite.toLowerCase() === "pce" ? "pce"
+                     : unite.toLowerCase().includes("litre") || unite.toLowerCase() === "l" ? "l"
+                     : unite.toLowerCase() === "kg" ? "kg" : "g";
+        const prix_u = u_norm === "kg" ? prix/1000 : u_norm === "l" ? prix/1000 : prix;
+        return {
+          nom,
+          nom_lower: normalizeStr(nom),
+          unite: u_norm,
+          prix_achat: prix,
+          prix_unitaire: prix_u,
+          fournisseur: colFourn ? String(row[colFourn]||"").trim() : "",
+          code: colCode ? String(row[colCode]||"").trim() : "",
+          famille: colFamille ? String(row[colFamille]||"").trim() : ""
+        };
+      }).filter(p => p.nom && p.prix_achat > 0);
+
+      // Écraser l'ancienne mercuriale
+      MERCURIALE_ACTIVE = newMerc;
+      localStorage.setItem("anthouard_mercuriale", JSON.stringify(newMerc));
+
+      statusEl.textContent = "✓ Mercuriale mise à jour";
+      statusEl.className = "merc-status";
+      msgEl.textContent = newMerc.length + " produits chargés depuis " + file.name;
+      updateMercurialeStatus();
+      setTimeout(() => { msgEl.style.display = "none"; }, 4000);
+    } catch(err) {
+      msgEl.textContent = "Erreur : " + err.message;
+      msgEl.style.color = "#e74c3c";
+    }
+    fileInput.value = "";
+  });
+});
+
+// ─── MERCURIALE ───────────────────────────────────────────────────────────────
+function normalizeStr(s) {
+  return (s || "").toLowerCase()
+    .replace(/[éèêë]/g,"e").replace(/[àâ]/g,"a").replace(/[îï]/g,"i")
+    .replace(/[ôö]/g,"o").replace(/[ùûü]/g,"u").replace(/ç/g,"c")
+    .replace(/œ/g,"oe").replace(/[^a-z0-9 ]/g," ").replace(/  +/g," ").trim();
+}
+
+function findInMercuriale(nomIngredient) {
+  const nom = normalizeStr(nomIngredient);
+  if (!nom || nom.length < 2) return null;
+  const words = nom.split(" ").filter(w => w.length > 2);
+
+  // 1. Correspondance exacte
+  let found = MERCURIALE_ACTIVE.find(p => p.nom_lower === nom);
+  if (found) return found;
+
+  // 2. L'un contient l'autre
+  found = MERCURIALE_ACTIVE.find(p => nom.includes(p.nom_lower) || p.nom_lower.includes(nom));
+  if (found) return found;
+
+  // 3. Au moins un mot commun significatif
+  found = MERCURIALE_ACTIVE.find(p => {
+    const pw = p.nom_lower.split(" ").filter(w => w.length > 2);
+    return words.some(w => pw.includes(w));
+  });
+  return found || null;
+}
+
+function applyMercuriale(ings) {
+  return ings.map(ing => {
+    const match = findInMercuriale(ing.nom);
+    if (!match) {
+      // Pas dans la mercuriale → prix à 0
+      return { ...ing, prix_unitaire_ht: 0, total_ht: 0 };
+    }
+    // Adapter prix selon unité de l'ingrédient
+    const u = (ing.unite || "g").toLowerCase();
+    let prix_u = match.prix_unitaire; // prix en €/g, €/ml ou €/pce selon match.unite
+    // Si unité ing = kg et mercuriale en kg → prix_u est €/g, on veut €/kg
+    if (u === "kg" && match.unite === "kg") prix_u = match.prix_achat;
+    if (u === "l"  && match.unite === "l")  prix_u = match.prix_achat;
+    const b = parseFloat(ing.qte_brute) || 0;
+    const d = parseFloat(ing.perte_pct) || 0;
+    const qn = parseFloat((b * (1 - d/100)).toFixed(2));
+    return {
+      ...ing,
+      prix_unitaire_ht: prix_u,
+      qte_nette: qn,
+      total_ht: parseFloat((b * prix_u).toFixed(3)),
+      _merc: match.nom + " · " + match.fournisseur + " · " + match.prix_achat + " €/" + match.unite
+    };
+  });
+}
+
 </script>
 </body>
 </html>
