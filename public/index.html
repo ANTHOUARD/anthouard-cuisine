@@ -192,7 +192,7 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 
 /* ── DROPDOWN MERCURIALE ── */
 .merc-wrap { position: relative; width: 100%; }
-.merc-search { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 22px 7px 8px; cursor: text; }
+.merc-search { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 22px 7px 8px; cursor: text; display: block; }
 .merc-search:focus { background: rgba(155,35,53,0.12); }
 .merc-icon { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #4caf50; pointer-events: none; }
 .merc-icon.warn { color: #e74c3c; }
@@ -287,10 +287,10 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 }
 
 /* ── DROPDOWN MERCURIALE ── */
-.merc-dropdown { position: relative; width: 100%; }
-.merc-search { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 22px 7px 8px; cursor: text; }
+.merc-wrap2 { position: relative; width: 100%; }
+.merc-search { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 22px 7px 8px; cursor: text; display: block; }
 .merc-search:focus { background: rgba(74,122,207,0.12); }
-.merc-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 999; background: #1e1e1e; border: 1px solid var(--blue); max-height: 220px; overflow-y: auto; box-shadow: 0 4px 16px rgba(0,0,0,0.6); display: none; }
+.merc-results { position: absolute; top: 100%; left: -1px; right: -1px; z-index: 9999; background: #1e1e1e; border: 2px solid #9b2335; max-height: 240px; overflow-y: auto; box-shadow: 0 6px 20px rgba(0,0,0,0.8); display: none; }
 .merc-results.open { display: block; }
 .merc-item { padding: 7px 10px; cursor: pointer; border-bottom: 1px solid #2a2a2a; font-size: 11px; line-height: 1.4; }
 .merc-item:hover, .merc-item.active { background: rgba(74,122,207,0.25); }
@@ -914,7 +914,7 @@ function ingRow(ing) {
     : `<span title="Hors mercuriale" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#e74c3c;font-size:10px;cursor:help">⚠</span>`;
   return `<tr data-id="${ing._id}">
     <td style="position:relative;overflow:visible">
-      <div class="merc-dropdown" data-ingid="${ing._id}">
+      <div class="merc-wrap2" data-ingid="${ing._id}">
         <input class="merc-search" data-field="nom" placeholder="${esc(ing.nom || 'Rechercher...')}" value="${esc(ing.nom || '')}" autocomplete="off">
         <div class="merc-results" id="merc-res-${ing._id}"></div>
       </div>
@@ -1041,7 +1041,7 @@ function attachIngListeners(container, platId, ings, cfg, plat) {
 
   // Fermer si clic ailleurs
   document.addEventListener("click", e => {
-    if (!e.target.closest(".merc-dropdown")) {
+    if (!e.target.closest(".merc-wrap2")) {
       tbody.querySelectorAll(".merc-results.open").forEach(d => d.classList.remove("open"));
     }
   });
