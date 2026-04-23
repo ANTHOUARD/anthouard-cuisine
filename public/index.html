@@ -190,6 +190,43 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 .ing-select:focus { background: rgba(155,35,53,0.18); }
 @media print { .ing-select { background: transparent !important; color: #000 !important; border: none !important; font-size: 10px !important; } }
 
+/* ── BIBLIOTHÈQUE ── */
+.biblio-toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+.biblio-search { flex:1; min-width:200px; max-width:420px; background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:Arial,sans-serif; font-size:13px; padding:9px 14px; outline:none; }
+.biblio-search:focus { border-color:var(--red); }
+.biblio-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.biblio-filter { padding:5px 12px; background:var(--bg2); border:1px solid var(--border); color:var(--text3); font-family:Arial,sans-serif; font-size:10px; font-weight:bold; text-transform:uppercase; cursor:pointer; }
+.biblio-filter.on { background:var(--red); border-color:var(--red); color:#fff; }
+.biblio-count { font-size:11px; color:var(--text3); margin-bottom:16px; }
+.biblio-loading { padding:40px; text-align:center; color:var(--text3); font-size:12px; }
+.biblio-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+.biblio-card { background:var(--bg2); border:1px solid var(--border); border-left:4px solid var(--border); padding:16px 18px; transition:border-color 0.15s; position:relative; }
+.biblio-card:hover { border-color:var(--red); }
+.biblio-card.cat-entree  { border-left-color:#4a7acf; }
+.biblio-card.cat-plat    { border-left-color:#9b2335; }
+.biblio-card.cat-dessert { border-left-color:#c0861e; }
+.biblio-card.cat-fromage { border-left-color:#4caf50; }
+.biblio-date { position:absolute; top:10px; right:12px; font-size:9px; color:#444; }
+.biblio-card-cat { font-size:9px; font-weight:bold; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); margin-bottom:4px; }
+.biblio-card-nom { font-size:15px; font-weight:bold; color:#fff; margin-bottom:3px; }
+.biblio-card-etab { font-size:10px; color:#555; margin-bottom:12px; }
+.biblio-card-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; padding:10px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.biblio-stat { text-align:center; }
+.biblio-stat-label { font-size:9px; text-transform:uppercase; color:#555; margin-bottom:2px; }
+.biblio-stat-val { font-size:13px; font-weight:bold; color:#ccc; }
+.biblio-stat-val.green { color:#7ec8a0; }
+.biblio-stat-val.orange { color:#f0a030; }
+.biblio-card-actions { display:flex; gap:8px; }
+.btn-biblio { flex:1; padding:8px; font-family:Arial,sans-serif; font-size:10px; font-weight:bold; text-transform:uppercase; cursor:pointer; border:none; text-align:center; }
+.btn-biblio.open { background:var(--red); color:#fff; }
+.btn-biblio.open:hover { background:var(--redlight); }
+.btn-biblio.print { background:#1a3a1a; border:1px solid #4caf50; color:#4caf50; }
+.btn-biblio.del { background:#2a1a1a; border:1px solid #663333; color:#e74c3c; }
+.btn-biblio.del:hover { background:#3a1a1a; }
+.biblio-empty { padding:60px 0; text-align:center; color:var(--text3); font-size:12px; line-height:2.2; }
+.biblio-save-confirm { padding:8px 14px; background:#1a3a1a; border:1px solid #4caf50; color:#4caf50; font-size:11px; border-radius:2px; animation: fadeout 3s forwards; }
+@keyframes fadeout { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+
 /* ── DROPDOWN MERCURIALE ── */
 .merc-wrap { position: relative; width: 100%; }
 .merc-search { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 22px 7px 8px; cursor: text; display: block; }
@@ -288,6 +325,43 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
   .no-print { display: none !important; }
 }
 
+/* ── BIBLIOTHÈQUE ── */
+.biblio-toolbar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+.biblio-search { flex:1; min-width:200px; max-width:420px; background:var(--bg3); border:1px solid var(--border); color:var(--text); font-family:Arial,sans-serif; font-size:13px; padding:9px 14px; outline:none; }
+.biblio-search:focus { border-color:var(--red); }
+.biblio-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.biblio-filter { padding:5px 12px; background:var(--bg2); border:1px solid var(--border); color:var(--text3); font-family:Arial,sans-serif; font-size:10px; font-weight:bold; text-transform:uppercase; cursor:pointer; }
+.biblio-filter.on { background:var(--red); border-color:var(--red); color:#fff; }
+.biblio-count { font-size:11px; color:var(--text3); margin-bottom:16px; }
+.biblio-loading { padding:40px; text-align:center; color:var(--text3); font-size:12px; }
+.biblio-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+.biblio-card { background:var(--bg2); border:1px solid var(--border); border-left:4px solid var(--border); padding:16px 18px; transition:border-color 0.15s; position:relative; }
+.biblio-card:hover { border-color:var(--red); }
+.biblio-card.cat-entree  { border-left-color:#4a7acf; }
+.biblio-card.cat-plat    { border-left-color:#9b2335; }
+.biblio-card.cat-dessert { border-left-color:#c0861e; }
+.biblio-card.cat-fromage { border-left-color:#4caf50; }
+.biblio-date { position:absolute; top:10px; right:12px; font-size:9px; color:#444; }
+.biblio-card-cat { font-size:9px; font-weight:bold; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); margin-bottom:4px; }
+.biblio-card-nom { font-size:15px; font-weight:bold; color:#fff; margin-bottom:3px; }
+.biblio-card-etab { font-size:10px; color:#555; margin-bottom:12px; }
+.biblio-card-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; padding:10px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.biblio-stat { text-align:center; }
+.biblio-stat-label { font-size:9px; text-transform:uppercase; color:#555; margin-bottom:2px; }
+.biblio-stat-val { font-size:13px; font-weight:bold; color:#ccc; }
+.biblio-stat-val.green { color:#7ec8a0; }
+.biblio-stat-val.orange { color:#f0a030; }
+.biblio-card-actions { display:flex; gap:8px; }
+.btn-biblio { flex:1; padding:8px; font-family:Arial,sans-serif; font-size:10px; font-weight:bold; text-transform:uppercase; cursor:pointer; border:none; text-align:center; }
+.btn-biblio.open { background:var(--red); color:#fff; }
+.btn-biblio.open:hover { background:var(--redlight); }
+.btn-biblio.print { background:#1a3a1a; border:1px solid #4caf50; color:#4caf50; }
+.btn-biblio.del { background:#2a1a1a; border:1px solid #663333; color:#e74c3c; }
+.btn-biblio.del:hover { background:#3a1a1a; }
+.biblio-empty { padding:60px 0; text-align:center; color:var(--text3); font-size:12px; line-height:2.2; }
+.biblio-save-confirm { padding:8px 14px; background:#1a3a1a; border:1px solid #4caf50; color:#4caf50; font-size:11px; border-radius:2px; animation: fadeout 3s forwards; }
+@keyframes fadeout { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+
 /* ── DROPDOWN MERCURIALE ── */
 .merc-wrap2 { position: relative; width: 100%; display: flex; align-items: center; gap: 6px; padding: 4px 6px; }
 .merc-badge { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; cursor: help; }
@@ -351,6 +425,7 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
       <button class="snav active" id="nav-1" onclick="goStep(1)">01 — Paramétrer</button>
       <button class="snav" id="nav-2" onclick="goStep(2)" disabled>02 — Composer la carte</button>
       <button class="snav" id="nav-3" onclick="goStep(3)" disabled>03 — Fiches techniques</button>
+      <button class="snav" id="nav-4" onclick="goStep(4)" style="border-left:1px solid var(--border)">📂 Bibliothèque</button>
     </div>
 
     <!-- STEP 1 -->
@@ -483,6 +558,7 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
       <div class="export-bar">
         <span class="export-lbl">Export</span>
         <button class="btn-green" onclick="imprimerPDF()">🖨 Exporter en PDF</button>
+        <button class="btn-blue" onclick="sauvegarderFiches()" style="font-size:11px">💾 Sauvegarder les fiches</button>
         <button class="btn-outline" onclick="goStep(2)">← Retour carte</button>
         <button class="btn-outline" onclick="resetApp()">↺ Nouvelle carte</button>
       </div>
@@ -491,6 +567,26 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
         <div class="ltxt" id="fiches-loader-txt">Génération des fiches…</div>
       </div>
       <div id="fiches-container" class="fiches"></div>
+    </div>
+
+    <!-- STEP 4 — BIBLIOTHÈQUE -->
+    <div id="step-4" style="display:none">
+      <div class="sec-title">📂 Bibliothèque des fiches</div>
+      <div class="sec-sub">Fiches sauvegardées — partagées entre tous les utilisateurs — modifiables à tout moment</div>
+      <div class="biblio-toolbar">
+        <input class="biblio-search" id="biblio-search" placeholder="🔍  Rechercher par nom, catégorie, établissement…" oninput="renderBiblio()">
+        <button class="btn-red" style="font-size:11px;padding:9px 16px" onclick="goStep(1)">✚ Nouvelle carte</button>
+        <button class="btn-outline" style="font-size:11px;padding:9px 16px" onclick="renderBiblio()">↺ Actualiser</button>
+      </div>
+      <div class="biblio-filters" id="biblio-filters">
+        <button class="biblio-filter on" data-cat="" onclick="setBiblioFilter(this)">Tous</button>
+        <button class="biblio-filter" data-cat="Entree" onclick="setBiblioFilter(this)">Entrées</button>
+        <button class="biblio-filter" data-cat="Plat" onclick="setBiblioFilter(this)">Plats</button>
+        <button class="biblio-filter" data-cat="Dessert" onclick="setBiblioFilter(this)">Desserts</button>
+        <button class="biblio-filter" data-cat="Fromage" onclick="setBiblioFilter(this)">Fromages</button>
+      </div>
+      <div class="biblio-count" id="biblio-count"></div>
+      <div id="biblio-grid" class="biblio-grid"></div>
     </div>
   </div>
 </div>
@@ -577,15 +673,20 @@ document.getElementById("logout-btn").onclick = () => {
 // ─── NAVIGATION ───────────────────────────────────────────────────────────────
 let currentStep = 1;
 function goStep(n) {
-  if (n > 1 && n > currentStep && n !== currentStep + 1) return;
-  [1, 2, 3].forEach(i => {
-    document.getElementById("step-" + i).style.display = i === n ? "block" : "none";
+  // step 4 (bibliothèque) toujours accessible
+  if (n !== 4 && n > 1 && n > currentStep && n !== currentStep + 1) return;
+  [1, 2, 3, 4].forEach(i => {
+    const el = document.getElementById("step-" + i);
+    if (el) el.style.display = i === n ? "block" : "none";
     const btn = document.getElementById("nav-" + i);
-    btn.className = "snav" + (i === n ? " active" : i < n ? " done" : "");
-    btn.disabled = i > n && i > currentStep;
+    if (!btn) return;
+    btn.className = "snav" + (i === n ? " active" : (i < n && i !== 4) ? " done" : "");
+    btn.disabled = (i > n && i > currentStep && i !== 4);
   });
-  currentStep = Math.max(currentStep, n);
-  document.getElementById("nav-" + n).disabled = false;
+  if (n !== 4) currentStep = Math.max(currentStep, n);
+  const navN = document.getElementById("nav-" + n);
+  if (navN) navN.disabled = false;
+  if (n === 4) renderBiblio();
   window.scrollTo(0, 0);
 }
 
@@ -1316,13 +1417,217 @@ function imprimerFiche(platId) {
 }
 
 
+async function imprimerFicheBiblio(ficheId) {
+  await ouvrirFiche(ficheId);
+  setTimeout(() => imprimerFiche(parseInt(carte[0]?.id)), 800);
+}
+
 function resetApp() {
   carte = []; fiches = {}; fichesIngs = {}; nextId = 0;
+  carteHistorique = [];
   document.getElementById("fiches-container").innerHTML = "";
   document.getElementById("carte-container").innerHTML = "";
   document.getElementById("recap-bar").style.display = "none";
   currentStep = 1;
   goStep(1);
+}
+
+// ─── BIBLIOTHÈQUE ─────────────────────────────────────────────────────────────
+const BIBLIO_KEY = "anthouard_biblio_v2";
+
+async function loadBiblio() {
+  try {
+    const r = await window.storage.get(BIBLIO_KEY, true); // shared=true
+    return r ? JSON.parse(r.value) : [];
+  } catch(e) {
+    // Fallback localStorage si window.storage non dispo
+    try { return JSON.parse(localStorage.getItem(BIBLIO_KEY) || "[]"); }
+    catch(e2) { return []; }
+  }
+}
+
+async function saveBiblio(data) {
+  try {
+    await window.storage.set(BIBLIO_KEY, JSON.stringify(data), true); // shared=true
+  } catch(e) {
+    // Fallback localStorage
+    localStorage.setItem(BIBLIO_KEY, JSON.stringify(data));
+  }
+}
+
+async function sauvegarderFiches() {
+  const cfg = getCfg();
+  const plats = carte.filter(p => p.status === "validated" || p.manual);
+  if (!plats.length) { alert("Aucune fiche à sauvegarder."); return; }
+
+  const biblio = await loadBiblio();
+  let saved = 0;
+
+  plats.forEach(plat => {
+    const fiche = fiches[plat.id];
+    const ings  = fichesIngs[plat.id];
+    if (!fiche || fiche.error) return;
+
+    // Vérifier si une fiche avec le même nom existe déjà
+    const existingIdx = biblio.findIndex(f => f.nom.toLowerCase() === plat.nom.toLowerCase());
+    
+    const record = {
+      id: "fiche_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
+      nom: plat.nom,
+      categorie: plat.categorie,
+      etab: cfg.etab,
+      couverts: cfg.couverts,
+      savedAt: new Date().toLocaleDateString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" }),
+      plat,
+      fiche,
+      ings: JSON.parse(JSON.stringify(ings || [])),
+      marge: document.getElementById("marge-" + plat.id)?.value || "70",
+    };
+
+    if (existingIdx >= 0) {
+      // Remplacer l'existant
+      record.id = biblio[existingIdx].id; // garder le même id
+      biblio[existingIdx] = record;
+    } else {
+      biblio.push(record);
+    }
+    saved++;
+  });
+
+  await saveBiblio(biblio);
+  const msg = saved + " fiche" + (saved > 1 ? "s" : "") + " sauvegardée" + (saved > 1 ? "s" : "") + " ✓";
+  // Afficher confirmation non-bloquante
+  const exportLbl = document.querySelector(".export-lbl");
+  if (exportLbl) {
+    const old = exportLbl.innerHTML;
+    exportLbl.innerHTML = '<span class="biblio-save-confirm">' + msg + '</span>';
+    setTimeout(() => { exportLbl.innerHTML = old; }, 3500);
+  } else { alert(msg); }
+}
+
+let _biblioFilter = "";
+function setBiblioFilter(btn) {
+  _biblioFilter = btn.dataset.cat || "";
+  document.querySelectorAll(".biblio-filter").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+  renderBiblio();
+}
+
+async function renderBiblio() {
+  const grid = document.getElementById("biblio-grid");
+  const countEl = document.getElementById("biblio-count");
+  if (grid) grid.innerHTML = '<div class="biblio-loading">Chargement…</div>';
+  const biblio = await loadBiblio();
+  const q = (document.getElementById("biblio-search")?.value || "").toLowerCase().trim();
+  const grid = document.getElementById("biblio-grid");
+  const countEl = document.getElementById("biblio-count");
+  if (!grid) return;
+
+  const filtered = biblio.filter(f => {
+    const matchQ = !q || f.nom.toLowerCase().includes(q) ||
+      (f.categorie||"").toLowerCase().includes(q) ||
+      (f.etab||"").toLowerCase().includes(q);
+    const matchCat = !_biblioFilter || (f.categorie||"").toLowerCase().includes(_biblioFilter.toLowerCase());
+    return matchQ && matchCat;
+  });
+
+  if (countEl) countEl.textContent = filtered.length + " fiche" + (filtered.length > 1 ? "s" : "") + " — " + biblio.length + " au total";
+
+  if (!filtered.length) {
+    grid.innerHTML = biblio.length === 0
+      ? '<div class="biblio-empty">Aucune fiche sauvegardée.<br>Générez des fiches techniques et cliquez sur <strong>💾 Sauvegarder les fiches</strong>.</div>'
+      : '<div class="biblio-empty">Aucune fiche ne correspond à votre recherche.</div>';
+    return;
+  }
+
+  // Trier par date décroissante
+  const sorted = [...filtered].reverse();
+
+  grid.innerHTML = sorted.map(f => {
+    const totalHT = (f.ings||[]).reduce((s,i) => s+(parseFloat(i.total_ht)||0), 0);
+    const marge = parseFloat(f.marge||70)/100;
+    const cout = f.couverts > 0 ? totalHT/f.couverts : totalHT;
+    const pvHT = marge < 1 && cout > 0 ? cout/(1-marge) : 0;
+    const margeBrute = pvHT - cout;
+    const cat = (f.categorie||"").toLowerCase();
+    const catCls = cat.includes("entr") ? "cat-entree" : cat.includes("plat") ? "cat-plat" : cat.includes("dess") ? "cat-dessert" : cat.includes("from") ? "cat-fromage" : "";
+    return `<div class="biblio-card ${catCls}">
+      <div class="biblio-date">${esc(f.savedAt||"")}</div>
+      <div class="biblio-card-cat">${esc(f.categorie||"")}</div>
+      <div class="biblio-card-nom">${esc(f.nom)}</div>
+      <div class="biblio-card-etab">${esc(f.etab||"")} · ${f.couverts||1} couvert${(f.couverts||1)>1?"s":""} · ${(f.ings||[]).length} ingrédients</div>
+      <div class="biblio-card-stats">
+        <div class="biblio-stat">
+          <div class="biblio-stat-label">Coût / assiette</div>
+          <div class="biblio-stat-val green">${eurFmt(cout)}</div>
+        </div>
+        <div class="biblio-stat">
+          <div class="biblio-stat-label">PV HT</div>
+          <div class="biblio-stat-val orange">${eurFmt(pvHT)}</div>
+        </div>
+        <div class="biblio-stat">
+          <div class="biblio-stat-label">Marge brute</div>
+          <div class="biblio-stat-val">${eurFmt(margeBrute)}</div>
+        </div>
+      </div>
+      <div class="biblio-card-actions">
+        <button class="btn-biblio open" onclick="ouvrirFiche('${esc(f.id)}')">✎ Ouvrir & modifier</button>
+        <button class="btn-biblio print" onclick="imprimerFicheBiblio('${esc(f.id)}')">🖨</button>
+        <button class="btn-biblio del" onclick="supprimerFiche('${esc(f.id)}')">✕</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function ouvrirFiche(ficheId) {
+  const biblio = await loadBiblio();
+  const record = biblio.find(f => f.id === ficheId);
+  if (!record) return;
+
+  // Restaurer l'état
+  carte = [{ ...record.plat, id: record.plat.id || nextId++, status: "validated" }];
+  fiches[record.plat.id] = record.fiche;
+  fichesIngs[record.plat.id] = JSON.parse(JSON.stringify(record.ings));
+
+  // Restaurer la config
+  const etabSel = document.getElementById("cfg-etab");
+  if (etabSel && record.etab) {
+    for (let i = 0; i < etabSel.options.length; i++) {
+      if (etabSel.options[i].value === record.etab) { etabSel.selectedIndex = i; break; }
+    }
+  }
+  const couvertEl = document.getElementById("cfg-couverts");
+  if (couvertEl) couvertEl.value = record.couverts || 1;
+
+  // Aller sur la fiche
+  currentStep = 2;
+  goStep(3);
+
+  // Re-rendre les fiches
+  setTimeout(() => {
+    const cfg = getCfg();
+    const container = document.getElementById("fiches-container");
+    container.innerHTML = "";
+    const plats = carte.filter(p => p.status === "validated" || p.manual);
+    renderFiches(plats, cfg);
+
+    // Restaurer le taux de marge
+    setTimeout(() => {
+      const margeEl = document.getElementById("marge-" + record.plat.id);
+      if (margeEl) {
+        margeEl.value = record.marge || 70;
+        recalcPrixVente(record.plat.id);
+      }
+    }, 100);
+  }, 50);
+}
+
+async function supprimerFiche(ficheId) {
+  if (!confirm("Supprimer cette fiche ?")) return;
+  if (!confirm("Supprimer cette fiche de la bibliothèque ?")) return;
+  const biblio = (await loadBiblio()).filter(f => f.id !== ficheId);
+  await saveBiblio(biblio);
+  renderBiblio();
 }
 const MERCURIALE = [{"nom": "4 épices", "nom_lower": "4 epices", "unite": "pce", "prix_achat": 13.0, "prix_unitaire": 13.0, "fournisseur": "SYSCO", "code": "F0086", "famille": "Epicerie"}, {"nom": "Amandes effilées", "nom_lower": "amandes effilees", "unite": "kg", "prix_achat": 9.9, "prix_unitaire": 0.0099, "fournisseur": "SYSCO", "code": "F0001", "famille": "Epicerie"}, {"nom": "Beurre", "nom_lower": "beurre", "unite": "kg", "prix_achat": 10.8, "prix_unitaire": 0.0108, "fournisseur": "SYSCO", "code": "F0002", "famille": "Crémerie"}, {"nom": "Beurre", "nom_lower": "beurre", "unite": "kg", "prix_achat": 6.33, "prix_unitaire": 0.00633, "fournisseur": "SYSCO", "code": "F0096", "famille": "Crémerie"}, {"nom": "Biscuit cuillere", "nom_lower": "biscuit cuillere", "unite": "pce", "prix_achat": 27.0, "prix_unitaire": 27.0, "fournisseur": "SYSCO", "code": "F0075", "famille": "Epicerie"}, {"nom": "Blanc d'œuf", "nom_lower": "blanc d'oeuf", "unite": "l", "prix_achat": 8.73, "prix_unitaire": 0.00873, "fournisseur": "SYSCO", "code": "F0070", "famille": "Produit frais"}, {"nom": "Bœuf", "nom_lower": "boeuf", "unite": "kg", "prix_achat": 32.0, "prix_unitaire": 0.032, "fournisseur": "CENTRALE DES VIANDES", "code": "F0082", "famille": "viande"}, {"nom": "Bombe à graisse", "nom_lower": "bombe a graisse", "unite": "l", "prix_achat": 2.78, "prix_unitaire": 0.00278, "fournisseur": "SYSCO", "code": "F0003", "famille": "Epicerie"}, {"nom": "Burrata", "nom_lower": "burrata", "unite": "pce", "prix_achat": 1.6, "prix_unitaire": 1.6, "fournisseur": "SYSCO", "code": "F0079", "famille": "Crémerie"}, {"nom": "Cabillaud", "nom_lower": "cabillaud", "unite": "kg", "prix_achat": 28.0, "prix_unitaire": 0.028, "fournisseur": "HOMARD ACADIEN", "code": "F0109", "famille": "Poisson"}, {"nom": "Caille", "nom_lower": "caille", "unite": "kg", "prix_achat": 24.0, "prix_unitaire": 0.024, "fournisseur": "CENTRALE DES VIANDES", "code": "F0108", "famille": "viande"}, {"nom": "Cardamone", "nom_lower": "cardamone", "unite": "kg", "prix_achat": 12.5, "prix_unitaire": 0.0125, "fournisseur": "SYSCO", "code": "F0083", "famille": "Epicerie"}, {"nom": "Cassonade", "nom_lower": "cassonade", "unite": "kg", "prix_achat": 4.4, "prix_unitaire": 0.0044, "fournisseur": "SYSCO", "code": "F0004", "famille": "Epicerie"}, {"nom": "Cépes", "nom_lower": "cepes", "unite": "kg", "prix_achat": 11.67, "prix_unitaire": 0.01167, "fournisseur": "COTE FRAIS", "code": "F0005", "famille": "Fruits / Légumes"}, {"nom": "Chair de crabe", "nom_lower": "chair de crabe", "unite": "kg", "prix_achat": 14.0, "prix_unitaire": 0.014, "fournisseur": "HOMARD ACADIEN", "code": "F0006", "famille": "Poisson"}, {"nom": "Champignons", "nom_lower": "champignons", "unite": "kg", "prix_achat": 3.67, "prix_unitaire": 0.00367, "fournisseur": "COTE FRAIS", "code": "F0007", "famille": "Fruits / Légumes"}, {"nom": "Chevre buche", "nom_lower": "chevre buche", "unite": "pce", "prix_achat": 1.9, "prix_unitaire": 1.9, "fournisseur": "SYSCO", "code": "F0099", "famille": "Crémerie"}, {"nom": "Chocolat blanc", "nom_lower": "chocolat blanc", "unite": "kg", "prix_achat": 24.97, "prix_unitaire": 0.02497, "fournisseur": "SYSCO", "code": "F0008", "famille": "Epicerie"}, {"nom": "Chocolat Noir", "nom_lower": "chocolat noir", "unite": "kg", "prix_achat": 36.0, "prix_unitaire": 0.036, "fournisseur": "SYSCO", "code": "F0009", "famille": "Epicerie"}, {"nom": "Choux chinois", "nom_lower": "choux chinois", "unite": "pce", "prix_achat": 2.99, "prix_unitaire": 2.99, "fournisseur": "COTE FRAIS", "code": "F0010", "famille": "Fruits / Légumes"}, {"nom": "Chutney figue", "nom_lower": "chutney figue", "unite": "kg", "prix_achat": 5.81, "prix_unitaire": 0.005809999999999999, "fournisseur": "SYSCO", "code": "F0107", "famille": "Epicerie"}, {"nom": "Clementine", "nom_lower": "clementine", "unite": "kg", "prix_achat": 5.29, "prix_unitaire": 0.00529, "fournisseur": "COTE FRAIS", "code": "F0011", "famille": "Fruits / Légumes"}, {"nom": "Concentrer tomate", "nom_lower": "concentrer tomate", "unite": "kg", "prix_achat": 2.13, "prix_unitaire": 0.00213, "fournisseur": "SYSCO", "code": "F0012", "famille": "Epicerie"}, {"nom": "Confiture", "nom_lower": "confiture", "unite": "kg", "prix_achat": 4.98, "prix_unitaire": 0.00498, "fournisseur": "SYSCO", "code": "F0095", "famille": "Epicerie"}, {"nom": "Conté", "nom_lower": "conte", "unite": "kg", "prix_achat": 19.0, "prix_unitaire": 0.019, "fournisseur": "SYSCO", "code": "F0105", "famille": "Crémerie"}, {"nom": "Coq", "nom_lower": "coq", "unite": "kg", "prix_achat": 5.6, "prix_unitaire": 0.0056, "fournisseur": "HOMARD ACADIEN", "code": "F0016", "famille": "Poisson"}, {"nom": "Cornichon", "nom_lower": "cornichon", "unite": "kg", "prix_achat": 9.4, "prix_unitaire": 0.0094, "fournisseur": "SYSCO", "code": "F0013", "famille": "Epicerie"}, {"nom": "Cramberie", "nom_lower": "cramberie", "unite": "kg", "prix_achat": 12.0, "prix_unitaire": 0.012, "fournisseur": "SYSCO", "code": "F0092", "famille": "Epicerie"}, {"nom": "Crème liquide", "nom_lower": "creme liquide", "unite": "l", "prix_achat": 4.0, "prix_unitaire": 0.004, "fournisseur": "SYSCO", "code": "F0014", "famille": "Crémerie"}, {"nom": "Crevette", "nom_lower": "crevette", "unite": "kg", "prix_achat": 15.8, "prix_unitaire": 0.0158, "fournisseur": "HOMARD ACADIEN", "code": "F0015", "famille": "Poisson"}, {"nom": "Crottin de chavignole", "nom_lower": "crottin de chavignole", "unite": "pce", "prix_achat": 1.67, "prix_unitaire": 1.67, "fournisseur": "SYSCO", "code": "F0097", "famille": "Crémerie"}, {"nom": "Daurade sebaste", "nom_lower": "daurade sebaste", "unite": "kg", "prix_achat": 13.95, "prix_unitaire": 0.013949999999999999, "fournisseur": "HOMARD ACADIEN", "code": "F0074", "famille": "Poisson"}, {"nom": "Dorade/BAR", "nom_lower": "dorade/bar", "unite": "kg", "prix_achat": 17.6, "prix_unitaire": 0.0176, "fournisseur": "HOMARD ACADIEN", "code": "F0017", "famille": "Poisson"}, {"nom": "Emmental râpé", "nom_lower": "emmental rape", "unite": "kg", "prix_achat": 5.6, "prix_unitaire": 0.0056, "fournisseur": "SYSCO", "code": "F0018", "famille": "Crémerie"}, {"nom": "Escalope foie gras", "nom_lower": "escalope foie gras", "unite": "kg", "prix_achat": 56.73, "prix_unitaire": 0.056729999999999996, "fournisseur": "CENTRALE DES VIANDES", "code": "F0019", "famille": "viande"}, {"nom": "Escargots", "nom_lower": "escargots", "unite": "kg", "prix_achat": 14.7, "prix_unitaire": 0.0147, "fournisseur": "SYSCO", "code": "F0111", "famille": "Produit frais"}, {"nom": "Farine", "nom_lower": "farine", "unite": "kg", "prix_achat": 1.19, "prix_unitaire": 0.0011899999999999999, "fournisseur": "SYSCO", "code": "F0020", "famille": "Epicerie"}, {"nom": "Farine à pizza", "nom_lower": "farine a pizza", "unite": "kg", "prix_achat": 0.89, "prix_unitaire": 0.0008900000000000001, "fournisseur": "SYSCO", "code": "F0021", "famille": "Epicerie"}, {"nom": "Faut filet", "nom_lower": "faut filet", "unite": "kg", "prix_achat": 29.0, "prix_unitaire": 0.029, "fournisseur": "CENTRALE DES VIANDES", "code": "F0114", "famille": "viande"}, {"nom": "Feuille de lasagne", "nom_lower": "feuille de lasagne", "unite": "kg", "prix_achat": 2.19, "prix_unitaire": 0.00219, "fournisseur": "SYSCO", "code": "F0022", "famille": "Epicerie"}, {"nom": "Filet de boeuf", "nom_lower": "filet de boeuf", "unite": "kg", "prix_achat": 22.0, "prix_unitaire": 0.022, "fournisseur": "CENTRALE DES VIANDES", "code": "F0023", "famille": "viande"}, {"nom": "Filet de veau", "nom_lower": "filet de veau", "unite": "kg", "prix_achat": 34.8, "prix_unitaire": 0.0348, "fournisseur": "CENTRALE DES VIANDES", "code": "F0024", "famille": "viande"}, {"nom": "Foie gras eveiner", "nom_lower": "foie gras eveiner", "unite": "kg", "prix_achat": 31.47, "prix_unitaire": 0.03147, "fournisseur": "CENTRALE DES VIANDES", "code": "F0025", "famille": "viande"}, {"nom": "Fond brun", "nom_lower": "fond brun", "unite": "kg", "prix_achat": 11.56, "prix_unitaire": 0.01156, "fournisseur": "SYSCO", "code": "F0026", "famille": "Epicerie"}, {"nom": "Fond de tartelette", "nom_lower": "fond de tartelette", "unite": "pce", "prix_achat": 53.22, "prix_unitaire": 53.22, "fournisseur": "SYSCO", "code": "F0027", "famille": "Epicerie"}, {"nom": "Fond de veau", "nom_lower": "fond de veau", "unite": "kg", "prix_achat": 10.5, "prix_unitaire": 0.0105, "fournisseur": "SYSCO", "code": "F0084", "famille": "Epicerie"}, {"nom": "Framboises", "nom_lower": "framboises", "unite": "kg", "prix_achat": 3.55, "prix_unitaire": 0.0035499999999999998, "fournisseur": "COTE FRAIS", "code": "F0028", "famille": "Fruits / Légumes"}, {"nom": "Fromage à raclette", "nom_lower": "fromage a raclette", "unite": "kg", "prix_achat": 13.56, "prix_unitaire": 0.013560000000000001, "fournisseur": "SYSCO", "code": "F0098", "famille": "Crémerie"}, {"nom": "Fromage blanc", "nom_lower": "fromage blanc", "unite": "kg", "prix_achat": 2.29, "prix_unitaire": 0.00229, "fournisseur": "SYSCO", "code": "F0029", "famille": "Crémerie"}, {"nom": "Fumet de poisson", "nom_lower": "fumet de poisson", "unite": "kg", "prix_achat": 9.9, "prix_unitaire": 0.0099, "fournisseur": "SYSCO", "code": "F0030", "famille": "Epicerie"}, {"nom": "Gelatine dorée", "nom_lower": "gelatine doree", "unite": "kg", "prix_achat": 19.9, "prix_unitaire": 0.019899999999999998, "fournisseur": "SYSCO", "code": "F0093", "famille": "Epicerie"}, {"nom": "Glace au noix", "nom_lower": "glace au noix", "unite": "kg", "prix_achat": 18.58, "prix_unitaire": 0.01858, "fournisseur": "SYSCO", "code": "F0102", "famille": "Crémerie"}, {"nom": "Gros sel", "nom_lower": "gros sel", "unite": "kg", "prix_achat": 2.16, "prix_unitaire": 0.00216, "fournisseur": "SYSCO", "code": "F0031", "famille": "Epicerie"}, {"nom": "Guacamol", "nom_lower": "guacamol", "unite": "kg", "prix_achat": 10.0, "prix_unitaire": 0.01, "fournisseur": "SYSCO", "code": "F0032", "famille": "Epicerie"}, {"nom": "Huile olive", "nom_lower": "huile olive", "unite": "l", "prix_achat": 12.0, "prix_unitaire": 0.012, "fournisseur": "SYSCO", "code": "F0033", "famille": "Epicerie"}, {"nom": "Huile tournesol", "nom_lower": "huile tournesol", "unite": "l", "prix_achat": 10.0, "prix_unitaire": 0.01, "fournisseur": "SYSCO", "code": "F0034", "famille": "Epicerie"}, {"nom": "Jambon blanc", "nom_lower": "jambon blanc", "unite": "kg", "prix_achat": 6.2, "prix_unitaire": 0.0062, "fournisseur": "CENTRALE DES VIANDES", "code": "F0087", "famille": "viande"}, {"nom": "Jambon cru", "nom_lower": "jambon cru", "unite": "kg", "prix_achat": 14.84, "prix_unitaire": 0.014839999999999999, "fournisseur": "CENTRALE DES VIANDES", "code": "F0088", "famille": "viande"}, {"nom": "Jambon truffe", "nom_lower": "jambon truffe", "unite": "kg", "prix_achat": 19.0, "prix_unitaire": 0.019, "fournisseur": "CENTRALE DES VIANDES", "code": "F0035", "famille": "viande"}, {"nom": "Jaune d'œuf", "nom_lower": "jaune d'oeuf", "unite": "l", "prix_achat": 7.5, "prix_unitaire": 0.0075, "fournisseur": "SYSCO", "code": "F0071", "famille": "Produit frais"}, {"nom": "Jus de volaille", "nom_lower": "jus de volaille", "unite": "l", "prix_achat": 12.9, "prix_unitaire": 0.0129, "fournisseur": "SYSCO", "code": "F0036", "famille": "Epicerie"}, {"nom": "Ketchup", "nom_lower": "ketchup", "unite": "l", "prix_achat": 3.0, "prix_unitaire": 0.003, "fournisseur": "SYSCO", "code": "F0078", "famille": "Epicerie"}, {"nom": "Kikoman", "nom_lower": "kikoman", "unite": "l", "prix_achat": 6.56, "prix_unitaire": 0.00656, "fournisseur": "SYSCO", "code": "F0037", "famille": "Epicerie"}, {"nom": "Lait", "nom_lower": "lait", "unite": "l", "prix_achat": 1.56, "prix_unitaire": 0.00156, "fournisseur": "SYSCO", "code": "F0038", "famille": "Crémerie"}, {"nom": "Lait concentré", "nom_lower": "lait concentre", "unite": "l", "prix_achat": 1.7, "prix_unitaire": 0.0017, "fournisseur": "SYSCO", "code": "F0039", "famille": "Crémerie"}, {"nom": "Lard Fumée", "nom_lower": "lard fumee", "unite": "kg", "prix_achat": 20.0, "prix_unitaire": 0.02, "fournisseur": "CENTRALE DES VIANDES", "code": "F0089", "famille": "viande"}, {"nom": "Lentilles", "nom_lower": "lentilles", "unite": "kg", "prix_achat": 4.7, "prix_unitaire": 0.0047, "fournisseur": "SYSCO", "code": "F0040", "famille": "Epicerie"}, {"nom": "Lieu noir", "nom_lower": "lieu noir", "unite": "kg", "prix_achat": 16.0, "prix_unitaire": 0.016, "fournisseur": "HOMARD ACADIEN", "code": "F0041", "famille": "Poisson"}, {"nom": "Longe de thon", "nom_lower": "longe de thon", "unite": "kg", "prix_achat": 24.0, "prix_unitaire": 0.024, "fournisseur": "HOMARD ACADIEN", "code": "F0042", "famille": "Poisson"}, {"nom": "Longe de thon", "nom_lower": "longe de thon", "unite": "kg", "prix_achat": 19.0, "prix_unitaire": 0.019, "fournisseur": "HOMARD ACADIEN", "code": "F0090", "famille": "Poisson"}, {"nom": "Magret fumé", "nom_lower": "magret fume", "unite": "kg", "prix_achat": 8.48, "prix_unitaire": 0.00848, "fournisseur": "CENTRALE DES VIANDES", "code": "F0043", "famille": "viande"}, {"nom": "Maizena", "nom_lower": "maizena", "unite": "kg", "prix_achat": 6.42, "prix_unitaire": 0.00642, "fournisseur": "SYSCO", "code": "F0044", "famille": "Epicerie"}, {"nom": "Mascarponne", "nom_lower": "mascarponne", "unite": "kg", "prix_achat": 6.0, "prix_unitaire": 0.006, "fournisseur": "SYSCO", "code": "F0072", "famille": "Epicerie"}, {"nom": "Morillesentiere", "nom_lower": "morillesentiere", "unite": "kg", "prix_achat": 36.6, "prix_unitaire": 0.0366, "fournisseur": "SYSCO", "code": "F0045", "famille": "Epicerie"}, {"nom": "Nems", "nom_lower": "nems", "unite": "pce", "prix_achat": 0.265, "prix_unitaire": 0.265, "fournisseur": "SYSCO", "code": "F0081", "famille": "Produit frais"}, {"nom": "Oeufs", "nom_lower": "oeufs", "unite": "pce", "prix_achat": 0.31, "prix_unitaire": 0.31, "fournisseur": "SYSCO", "code": "F0046", "famille": "Produit frais"}, {"nom": "oeufs de truite", "nom_lower": "oeufs de truite", "unite": "kg", "prix_achat": 9.1, "prix_unitaire": 0.0091, "fournisseur": "SYSCO", "code": "F0073", "famille": "Epicerie"}, {"nom": "Onglet de bœufs", "nom_lower": "onglet de boeufs", "unite": "kg", "prix_achat": 25.0, "prix_unitaire": 0.025, "fournisseur": "CENTRALE DES VIANDES", "code": "F0113", "famille": "viande"}, {"nom": "Orange", "nom_lower": "orange", "unite": "kg", "prix_achat": 2.64, "prix_unitaire": 0.00264, "fournisseur": "COTE FRAIS", "code": "F0047", "famille": "Fruits / Légumes"}, {"nom": "Pain d'épice", "nom_lower": "pain d'epice", "unite": "kg", "prix_achat": 5.7, "prix_unitaire": 0.0057, "fournisseur": "SYSCO", "code": "F0094", "famille": "Epicerie"}, {"nom": "Pain de mie", "nom_lower": "pain de mie", "unite": "kg", "prix_achat": 2.35, "prix_unitaire": 0.00235, "fournisseur": "SYSCO", "code": "F0080", "famille": "Epicerie"}, {"nom": "Parmesan râpé", "nom_lower": "parmesan rape", "unite": "kg", "prix_achat": 8.5, "prix_unitaire": 0.0085, "fournisseur": "SYSCO", "code": "F0048", "famille": "Crémerie"}, {"nom": "Paté croute", "nom_lower": "pate croute", "unite": "kg", "prix_achat": 36.0, "prix_unitaire": 0.036, "fournisseur": "CENTRALE DES VIANDES", "code": "F0115", "famille": "viande"}, {"nom": "Pate feuilleté", "nom_lower": "pate feuillete", "unite": "kg", "prix_achat": 24.0, "prix_unitaire": 0.024, "fournisseur": "SYSCO", "code": "F0110", "famille": "Epicerie"}, {"nom": "Pavé de rumsteck", "nom_lower": "pave de rumsteck", "unite": "kg", "prix_achat": 18.56, "prix_unitaire": 0.01856, "fournisseur": "CENTRALE DES VIANDES", "code": "F0049", "famille": "viande"}, {"nom": "Philadelphia", "nom_lower": "philadelphia", "unite": "kg", "prix_achat": 11.47, "prix_unitaire": 0.011470000000000001, "fournisseur": "SYSCO", "code": "F0050", "famille": "Crémerie"}, {"nom": "Pomme de terre", "nom_lower": "pomme de terre", "unite": "kg", "prix_achat": 1.8, "prix_unitaire": 0.0018, "fournisseur": "COTE FRAIS", "code": "F0051", "famille": "Fruits / Légumes"}, {"nom": "Pomme golden", "nom_lower": "pomme golden", "unite": "kg", "prix_achat": 2.45, "prix_unitaire": 0.0024500000000000004, "fournisseur": "COTE FRAIS", "code": "F0091", "famille": "Fruits / Légumes"}, {"nom": "Poudre d'amandes", "nom_lower": "poudre d'amandes", "unite": "kg", "prix_achat": 9.12, "prix_unitaire": 0.00912, "fournisseur": "SYSCO", "code": "F0052", "famille": "Epicerie"}, {"nom": "Praliné", "nom_lower": "praline", "unite": "kg", "prix_achat": 8.2, "prix_unitaire": 0.008199999999999999, "fournisseur": "SYSCO", "code": "F0053", "famille": "Epicerie"}, {"nom": "Queue écrevisse", "nom_lower": "queue ecrevisse", "unite": "kg", "prix_achat": 36.5, "prix_unitaire": 0.0365, "fournisseur": "HOMARD ACADIEN", "code": "F0054", "famille": "Poisson"}, {"nom": "Ris d'agneau", "nom_lower": "ris d'agneau", "unite": "kg", "prix_achat": 19.9, "prix_unitaire": 0.019899999999999998, "fournisseur": "CENTRALE DES VIANDES", "code": "F0055", "famille": "viande"}, {"nom": "Riz noir", "nom_lower": "riz noir", "unite": "kg", "prix_achat": 4.69, "prix_unitaire": 0.004690000000000001, "fournisseur": "SYSCO", "code": "F0056", "famille": "Epicerie"}, {"nom": "Riz rond", "nom_lower": "riz rond", "unite": "kg", "prix_achat": 4.2, "prix_unitaire": 0.004200000000000001, "fournisseur": "SYSCO", "code": "F0057", "famille": "Epicerie"}, {"nom": "Rond de gîte", "nom_lower": "rond de gite", "unite": "kg", "prix_achat": 14.23, "prix_unitaire": 0.01423, "fournisseur": "CENTRALE DES VIANDES", "code": "F0058", "famille": "viande"}, {"nom": "Rosette", "nom_lower": "rosette", "unite": "kg", "prix_achat": 10.8, "prix_unitaire": 0.0108, "fournisseur": "CENTRALE DES VIANDES", "code": "F0106", "famille": "viande"}, {"nom": "Salade de fruit", "nom_lower": "salade de fruit", "unite": "kg", "prix_achat": 4.0, "prix_unitaire": 0.004, "fournisseur": "COTE FRAIS", "code": "F0101", "famille": "Fruits / Légumes"}, {"nom": "Satay épice", "nom_lower": "satay epice", "unite": "pce", "prix_achat": 12.0, "prix_unitaire": 12.0, "fournisseur": "SYSCO", "code": "F0085", "famille": "Epicerie"}, {"nom": "Sauce barbecue", "nom_lower": "sauce barbecue", "unite": "l", "prix_achat": 3.8, "prix_unitaire": 0.0038, "fournisseur": "SYSCO", "code": "F0077", "famille": "Epicerie"}, {"nom": "Sauce truffe", "nom_lower": "sauce truffe", "unite": "kg", "prix_achat": 11.7, "prix_unitaire": 0.011699999999999999, "fournisseur": "SYSCO", "code": "F0059", "famille": "Epicerie"}, {"nom": "Saumon", "nom_lower": "saumon", "unite": "kg", "prix_achat": 17.0, "prix_unitaire": 0.017, "fournisseur": "HOMARD ACADIEN", "code": "F0060", "famille": "Poisson"}, {"nom": "Saumon fumé", "nom_lower": "saumon fume", "unite": "kg", "prix_achat": 29.0, "prix_unitaire": 0.029, "fournisseur": "HOMARD ACADIEN", "code": "F0061", "famille": "Poisson"}, {"nom": "Shitake", "nom_lower": "shitake", "unite": "kg", "prix_achat": 4.6, "prix_unitaire": 0.0046, "fournisseur": "SYSCO", "code": "F0062", "famille": "Epicerie"}, {"nom": "St Jacques", "nom_lower": "st jacques", "unite": "kg", "prix_achat": 32.0, "prix_unitaire": 0.032, "fournisseur": "HOMARD ACADIEN", "code": "F0103", "famille": "Poisson"}, {"nom": "St marcelin", "nom_lower": "st marcelin", "unite": "pce", "prix_achat": 1.64, "prix_unitaire": 1.64, "fournisseur": "SYSCO", "code": "F0104", "famille": "Crémerie"}, {"nom": "Sucre semoule", "nom_lower": "sucre semoule", "unite": "kg", "prix_achat": 2.06, "prix_unitaire": 0.00206, "fournisseur": "SYSCO", "code": "F0063", "famille": "Epicerie"}, {"nom": "Suprême volaille", "nom_lower": "supreme volaille", "unite": "kg", "prix_achat": 9.9, "prix_unitaire": 0.0099, "fournisseur": "CENTRALE DES VIANDES", "code": "F0064", "famille": "viande"}, {"nom": "Tartare couteau", "nom_lower": "tartare couteau", "unite": "kg", "prix_achat": 19.0, "prix_unitaire": 0.019, "fournisseur": "CENTRALE DES VIANDES", "code": "F0076", "famille": "viande"}, {"nom": "Tarte tatin", "nom_lower": "tarte tatin", "unite": "pce", "prix_achat": 26.1, "prix_unitaire": 26.1, "fournisseur": "SYSCO", "code": "F0065", "famille": "Produit frais"}, {"nom": "Tempura", "nom_lower": "tempura", "unite": "kg", "prix_achat": 36.0, "prix_unitaire": 0.036, "fournisseur": "HOMARD ACADIEN", "code": "F0112", "famille": "Poisson"}, {"nom": "Terrine de foie gras", "nom_lower": "terrine de foie gras", "unite": "kg", "prix_achat": 54.0, "prix_unitaire": 0.054, "fournisseur": "CENTRALE DES VIANDES", "code": "F0066", "famille": "viande"}, {"nom": "Trompette", "nom_lower": "trompette", "unite": "kg", "prix_achat": 34.0, "prix_unitaire": 0.034, "fournisseur": "COTE FRAIS", "code": "F0067", "famille": "Fruits / Légumes"}, {"nom": "Vinaigre balsamique", "nom_lower": "vinaigre balsamique", "unite": "l", "prix_achat": 3.1, "prix_unitaire": 0.0031, "fournisseur": "SYSCO", "code": "F0068", "famille": "Epicerie"}, {"nom": "Vinaigre blanc", "nom_lower": "vinaigre blanc", "unite": "l", "prix_achat": 1.76, "prix_unitaire": 0.00176, "fournisseur": "SYSCO", "code": "F0069", "famille": "Epicerie"}, {"nom": "Yaourt de sovoie", "nom_lower": "yaourt de sovoie", "unite": "pce", "prix_achat": 0.6, "prix_unitaire": 0.6, "fournisseur": "SYSCO", "code": "F0100", "famille": "Crémerie"}];
 
