@@ -387,12 +387,24 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
         <button class="chip" onclick="toggleChip(this)">Automne</button>
         <button class="chip" onclick="toggleChip(this)">Hiver</button>
       </div>
-      <div class="chips-label">Composition</div>
-      <div class="chips" id="chips-cats">
-        <button class="chip on" onclick="toggleChip(this)">Entrées</button>
-        <button class="chip on" onclick="toggleChip(this)">Plats</button>
-        <button class="chip on" onclick="toggleChip(this)">Desserts</button>
-        <button class="chip" onclick="toggleChip(this)">Fromages</button>
+      <div class="chips-label">Nombre de plats par catégorie <span style="color:#555;font-weight:normal">(mettre 0 pour exclure)</span></div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+        <div class="fgroup" style="margin:0">
+          <label>Entrées</label>
+          <input class="finput" type="number" id="nb-entrees" value="3" min="0" max="10" style="width:80px">
+        </div>
+        <div class="fgroup" style="margin:0">
+          <label>Plats</label>
+          <input class="finput" type="number" id="nb-plats" value="4" min="0" max="10" style="width:80px">
+        </div>
+        <div class="fgroup" style="margin:0">
+          <label>Desserts</label>
+          <input class="finput" type="number" id="nb-desserts" value="3" min="0" max="10" style="width:80px">
+        </div>
+        <div class="fgroup" style="margin:0">
+          <label>Fromages</label>
+          <input class="finput" type="number" id="nb-fromages" value="0" min="0" max="10" style="width:80px">
+        </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
         <button class="btn-red" id="btn-generer" onclick="genererCarte()">▶ Générer la carte avec l'IA</button>
@@ -458,6 +470,7 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
         </div>
         <div class="recap-btns">
           <button class="btn-outline" onclick="goStep(1)">← Paramètres</button>
+          <button class="btn-outline" id="btn-annuler" onclick="annulerDerniereAction()" disabled title="Annuler la dernière validation/retrait">↩ Annuler</button>
           <button class="btn-red" id="btn-fiches" onclick="genererFiches()" disabled>Générer les fiches (<span id="r-val2">0</span>) →</button>
         </div>
       </div>
@@ -486,6 +499,7 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let accessCode = "";
 let carte = [];      // { id, nom, categorie, description, technique_cle, produit_vedette, temps_prep, difficulte, status, manual }
+let carteHistorique = []; // pile d'états pour annulation
 let fiches = {};     // id -> fiche data
 let fichesIngs = {}; // id -> ings array (modifiées)
 let nextId = 0;
@@ -589,6 +603,10 @@ function getCfg() {
     style: document.getElementById("cfg-style").value || "aucune",
     budget: parseFloat(document.getElementById("cfg-budget").value) || 1,
     saison: getChips("chips-saison").join(", ") || "Printemps",
+    nbEntrees:  parseInt(document.getElementById("nb-entrees").value)  || 0,
+    nbPlats:    parseInt(document.getElementById("nb-plats").value)    || 0,
+    nbDesserts: parseInt(document.getElementById("nb-desserts").value) || 0,
+    nbFromages: parseInt(document.getElementById("nb-fromages").value) || 0,
   };
 }
 
@@ -603,6 +621,7 @@ function toggleManualForm() {
 function addManualPlat() {
   const nom = document.getElementById("m-nom").value.trim();
   if (!nom) { alert("Le nom du plat est obligatoire."); return; }
+  sauvegarderHistorique();
   carte.push({
     id: nextId++,
     categorie: document.getElementById("m-cat").value,
@@ -624,16 +643,35 @@ async function genererCarte() {
   goStep(2);
   const cfg = getCfg();
   carte = carte.filter(p => p.manual);
+  carteHistorique = [];
+  const btnAnnul = document.getElementById("btn-annuler");
+  if (btnAnnul) btnAnnul.disabled = true;
   document.getElementById("carte-loader").style.display = "flex";
   document.getElementById("carte-error").style.display = "none";
   document.getElementById("carte-container").innerHTML = "";
   document.getElementById("recap-bar").style.display = "none";
 
+  // Construire la commande selon les nb choisis
+  const catParts = [];
+  if (cfg.nbEntrees  > 0) catParts.push(cfg.nbEntrees  + " entree"  + (cfg.nbEntrees  > 1 ? "s" : ""));
+  if (cfg.nbPlats    > 0) catParts.push(cfg.nbPlats    + " plat"    + (cfg.nbPlats    > 1 ? "s" : ""));
+  if (cfg.nbDesserts > 0) catParts.push(cfg.nbDesserts + " dessert" + (cfg.nbDesserts > 1 ? "s" : ""));
+  if (cfg.nbFromages > 0) catParts.push(cfg.nbFromages + " fromage" + (cfg.nbFromages > 1 ? "s" : ""));
+  if (!catParts.length) catParts.push("3 entrees, 4 plats, 3 desserts");
+  const catStr = catParts.join(", ");
+
+  const catMap = [];
+  if (cfg.nbEntrees  > 0) catMap.push(cfg.nbEntrees  + "x categorie Entree");
+  if (cfg.nbPlats    > 0) catMap.push(cfg.nbPlats    + "x categorie Plat");
+  if (cfg.nbDesserts > 0) catMap.push(cfg.nbDesserts + "x categorie Dessert");
+  if (cfg.nbFromages > 0) catMap.push(cfg.nbFromages + "x categorie Fromage");
+
   const prompt =
     "Tu es chef cuisinier expert en cuisine bistronomique francaise. " +
     "Genere une carte pour " + cfg.etab + ". Saison : " + cfg.saison +
     ". Contraintes : " + cfg.style + ". Budget cout matiere : " + cfg.budget + " euro HT par assiette. " +
-    "Genere exactement 3 entrees, 4 plats, 3 desserts. Nom 5 mots max. Description 12 mots max. " +
+    "Genere exactement : " + catStr + ". Respecte strictement ces categories et quantites : " + catMap.join(", ") + ". " +
+    "Nom 5 mots max. Description 12 mots max. " +
     "Reponds UNIQUEMENT avec ce JSON (zero texte, zero backtick) : " +
     '{"carte":[{"categorie":"Entree","nom":"Nom","description":"Desc","technique_cle":"Tech","produit_vedette":"Produit","temps_prep":"30 min","difficulte":"Moyen"}]}';
 
@@ -661,12 +699,32 @@ function carteGrouped() {
   return [...ordered, ...extra].filter(g => g.plats?.length > 0);
 }
 
+function sauvegarderHistorique() {
+  carteHistorique.push(JSON.parse(JSON.stringify(carte)));
+  if (carteHistorique.length > 20) carteHistorique.shift(); // max 20 états
+  const btn = document.getElementById("btn-annuler");
+  if (btn) btn.disabled = false;
+}
+
+function annulerDerniereAction() {
+  if (!carteHistorique.length) return;
+  carte = carteHistorique.pop();
+  const btn = document.getElementById("btn-annuler");
+  if (btn) btn.disabled = carteHistorique.length === 0;
+  renderCarte();
+}
+
 function setStatus(id, status) {
+  sauvegarderHistorique();
   const p = carte.find(p => p.id === id);
   if (p) p.status = status;
   renderCarte();
 }
-function removePlat(id) { carte = carte.filter(p => p.id !== id); renderCarte(); }
+function removePlat(id) {
+  sauvegarderHistorique();
+  carte = carte.filter(p => p.id !== id);
+  renderCarte();
+}
 
 function renderCarte() {
   const container = document.getElementById("carte-container");
