@@ -949,7 +949,7 @@ function renderFiches(plats, cfg) {
       const ingsRaw = (f.ingredients || []).map((ing, i) => ({ ...ing, _id: i }));
       const ingsWithMerc = applyMercuriale(ingsRaw);
       const ings = ingsWithMerc;
-      fichesIngs[plat.id] = ings;
+      fichesIngs[String(plat.id)] = ings;
       div.innerHTML = buildFicheHTML(plat, f, ings, cfg);
       attachIngListeners(div, plat.id, ings, cfg, plat);
     }
@@ -1112,6 +1112,7 @@ function ingRow(ing) {
 }
 
 function applyMercLine(match, ing, tr, platId, ings, cfg) {
+  platId = String(platId);
   // Applique un produit mercuriale sélectionné à une ligne ingrédient
   const u = match.unite;
   const unites = ["g","kg","ml","l","pce","botte","tranche"];
@@ -1197,6 +1198,7 @@ function showMercResults(input, resDiv, ing, tr, platId, ings, cfg) {
 }
 
 function attachIngListeners(container, platId, ings, cfg, plat) {
+  platId = String(platId); // normaliser en string
   const tbody = container.querySelector("#ing-body-" + platId);
   if (!tbody) return;
 
@@ -1334,6 +1336,7 @@ function eurFmt(n) {
 
 
 function addIngLine(platId, btn) {
+  platId = String(platId);
   const fiche = btn.closest(".fiche");
   const tbody = fiche.querySelector("#ing-body-" + platId);
   if (!tbody) return;
@@ -1369,6 +1372,7 @@ function addIngLine(platId, btn) {
 }
 
 function attachSingleRow(tr, platId, ing, ings, cfg) {
+  platId = String(platId);
   // Bouton supprimer
   const delBtn = tr.querySelector(".btn-del-line");
   if (delBtn) {
@@ -1425,6 +1429,7 @@ function attachSingleRow(tr, platId, ing, ings, cfg) {
 }
 
 function recalcPrixVente(platId) {
+  platId = String(platId);
   const margeEl   = document.getElementById("marge-"        + platId);
   const couvertEl = document.getElementById("cout-couvert-" + platId);
   const pvHtEl    = document.getElementById("pv-ht-"        + platId);
@@ -1526,7 +1531,7 @@ async function sauvegarderFiches() {
 
   plats.forEach(plat => {
     const fiche = fiches[plat.id];
-    const ings  = fichesIngs[plat.id];
+    const ings  = fichesIngs[String(plat.id)];
     if (!fiche || fiche.error) return;
 
     // Vérifier si une fiche avec le même nom existe déjà
