@@ -191,7 +191,20 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 .alg-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
 .alg { font-size: 10px; font-weight: bold; padding: 3px 9px; border: 1px solid var(--red); color: #f0a0a0; text-transform: uppercase; background: rgba(155,35,53,0.12); }
 
-.costs { display: flex; align-items: center; justify-content: flex-end; gap: 32px; padding: 14px 0 0; border-top: 2px solid var(--red); margin-top: 16px; flex-wrap: wrap; }
+.costs { padding: 16px 0 0; border-top: 2px solid var(--red); margin-top: 16px; }
+.costs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.costs-left { display: flex; flex-direction: column; gap: 10px; padding-right: 20px; border-right: 1px solid #3a3a3a; }
+.costs-right { display: flex; flex-direction: column; gap: 10px; padding-left: 20px; }
+.cost-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.clabel { font-size: 10px; font-weight: bold; text-transform: uppercase; color: var(--text3); }
+.cval { font-size: 16px; font-weight: bold; color: #fff; }
+.cval.green { color: #7ec8a0; }
+.cval.orange { color: #f0a030; }
+.cval.blue { color: #7aacff; }
+.marge-input-wrap { display: flex; align-items: center; gap: 6px; }
+.marge-input { width: 70px; background: #2a2a2a; border: 1px solid #444; color: #f0ede8; font-family: Arial,sans-serif; font-size: 13px; font-weight: bold; padding: 5px 8px; outline: none; text-align: right; }
+.marge-input:focus { border-color: var(--red); }
+.marge-pct { font-size: 13px; color: #aaa; font-weight: bold; }
 .cost-item { text-align: right; }
 .clabel { font-size: 10px; font-weight: bold; text-transform: uppercase; color: var(--text3); margin-bottom: 3px; }
 .cval { font-size: 22px; font-weight: bold; color: #fff; }
@@ -236,9 +249,14 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
   .etxt { color: #000 !important; font-size: 10px !important; }
   .alg { border: 1px solid #9b2335 !important; color: #9b2335 !important; background: #fff5f5 !important; font-size: 9px !important; }
   .costs { border-top: 2px solid #9b2335 !important; padding-top: 10px !important; }
+  .costs-grid { grid-template-columns: 1fr 1fr !important; }
+  .costs-left { border-right: 1px solid #ccc !important; }
   .clabel { color: #555 !important; font-size: 9px !important; }
-  .cval { color: #000 !important; font-size: 18px !important; }
+  .cval { color: #000 !important; font-size: 14px !important; }
   .cval.green { color: #1a6a1a !important; }
+  .cval.orange { color: #8a5000 !important; }
+  .cval.blue { color: #1a3a8a !important; }
+  .marge-input { background: transparent !important; border: 1px solid #ccc !important; color: #000 !important; }
   .pdf-print-btn { display: none !important; }
 }
 </style>
@@ -775,16 +793,39 @@ function buildFicheHTML(plat, fiche, ings, cfg) {
       <div class="fsec">Allergènes</div>
       <div class="alg-wrap">${algs}</div>
       <div class="costs">
-        <div style="flex:1">
-          <button class="btn-green no-print" style="font-size:10px" onclick="imprimerFiche(${plat.id})">🖨 Imprimer cette fiche</button>
-        </div>
-        <div class="cost-item">
-          <div class="clabel">Coût total HT</div>
-          <div class="cval" id="total-ht-${plat.id}">${eurFmt(totalHT)}</div>
-        </div>
-        <div class="cost-item">
-          <div class="clabel">Coût / assiette HT</div>
-          <div class="cval green" id="cout-couvert-${plat.id}">${eurFmt(coutCouvert)}</div>
+        <div class="costs-grid">
+          <div class="costs-left">
+            <div class="cost-row">
+              <span class="clabel">Coût matière total HT</span>
+              <span class="cval" id="total-ht-${plat.id}">${eurFmt(totalHT)}</span>
+            </div>
+            <div class="cost-row">
+              <span class="clabel">Coût / assiette HT</span>
+              <span class="cval green" id="cout-couvert-${plat.id}">${eurFmt(coutCouvert)}</span>
+            </div>
+            <div class="cost-row">
+              <span class="clabel">Taux de marge HT</span>
+              <div class="marge-input-wrap">
+                <input class="marge-input" type="number" min="1" max="99" step="1"
+                  id="marge-${plat.id}" value="70"
+                  oninput="recalcPrixVente('${plat.id}')">
+                <span class="marge-pct">%</span>
+              </div>
+            </div>
+          </div>
+          <div class="costs-right">
+            <div class="cost-row">
+              <span class="clabel">Prix de vente HT</span>
+              <span class="cval orange" id="pv-ht-${plat.id}">${eurFmt(coutCouvert > 0 ? coutCouvert / (1 - 0.70) : 0)}</span>
+            </div>
+            <div class="cost-row">
+              <span class="clabel">Prix de vente TTC <small style="font-weight:normal;font-size:9px">(TVA 10% restauration)</small></span>
+              <span class="cval blue" id="pv-ttc-${plat.id}">${eurFmt(coutCouvert > 0 ? coutCouvert / (1 - 0.70) * 1.10 : 0)}</span>
+            </div>
+            <div class="cost-row no-print" style="margin-top:4px">
+              <button class="btn-green" style="font-size:10px;padding:7px 14px" onclick="imprimerFiche(${plat.id})">🖨 Imprimer</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>`;
@@ -895,12 +936,38 @@ function attachIngListeners(container, platId, ings, cfg, plat) {
     const couvert = cfg.couverts > 0 ? total / cfg.couverts : 0;
     document.getElementById("total-ht-" + platId).textContent = eurFmt(total);
     document.getElementById("cout-couvert-" + platId).textContent = eurFmt(couvert);
+    recalcPrixVente(platId);
   });
 }
 
 function eurFmt(n) {
   if (n == null || isNaN(n)) return "—";
   return parseFloat(n).toFixed(2).replace(".", ",") + " €";
+}
+
+function recalcPrixVente(platId) {
+  const margeEl   = document.getElementById("marge-"        + platId);
+  const couvertEl = document.getElementById("cout-couvert-" + platId);
+  const pvHtEl    = document.getElementById("pv-ht-"        + platId);
+  const pvTtcEl   = document.getElementById("pv-ttc-"       + platId);
+  if (!margeEl || !couvertEl) return;
+
+  const marge = parseFloat(margeEl.value) / 100;
+  // Lire le coût assiette depuis le texte (ex: "2,50 €" → 2.50)
+  const couvertTxt = couvertEl.textContent.replace(/\s/g,"").replace(",",".").replace(/[€]/g,"");
+  const couvert = parseFloat(couvertTxt) || 0;
+
+  if (marge >= 1 || marge <= 0 || couvert <= 0) {
+    if (pvHtEl)  pvHtEl.textContent  = "—";
+    if (pvTtcEl) pvTtcEl.textContent = "—";
+    return;
+  }
+
+  const pvHT  = couvert / (1 - marge);      // ex: 2.50 / (1-0.70) = 8.33
+  const pvTTC = pvHT * 1.10;                // TVA 10% restauration
+
+  if (pvHtEl)  pvHtEl.textContent  = eurFmt(pvHT);
+  if (pvTtcEl) pvTtcEl.textContent = eurFmt(pvTTC);
 }
 
 // ─── EXPORT PDF ───────────────────────────────────────────────────────────────
