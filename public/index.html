@@ -284,6 +284,8 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
   .cval.blue { color: #1a3a8a !important; }
   .marge-input { background: transparent !important; border: 1px solid #ccc !important; color: #000 !important; }
   .pdf-print-btn { display: none !important; }
+  .btn-add-line { display: none !important; }
+  .no-print { display: none !important; }
 }
 
 /* ── DROPDOWN MERCURIALE ── */
@@ -293,7 +295,7 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 .merc-badge.ko  { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; }
 .merc-search { flex: 1; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 3px 0; cursor: text; min-width: 0; }
 .merc-search:focus { background: transparent; }
-.merc-results { position: absolute; top: calc(100% + 2px); left: 0; right: 0; z-index: 9999; background: #181818; border: 2px solid #9b2335; max-height: 260px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.9); display: none; border-radius: 2px; }
+.merc-results { position: fixed; z-index: 9999; background: #181818; border: 2px solid #9b2335; max-height: 340px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.95); display: none; border-radius: 3px; min-width: 600px; max-width: 900px; }
 .merc-results.open { display: block; }
 .merc-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #2a2a2a; }
 .merc-item:last-child { border-bottom: none; }
@@ -834,6 +836,12 @@ function buildFicheHTML(plat, fiche, ings, cfg) {
           ${ings.map(ing => ingRow(ing)).join("")}
         </tbody>
       </table>
+      <div style="margin-top:8px">
+        <button class="btn-add-line no-print" onclick="addIngLine('${plat.id}', this)" 
+          style="padding:6px 14px;background:#1a2a4a;border:1px solid #4a7acf;color:#7aacff;font-family:Arial,sans-serif;font-size:10px;font-weight:bold;text-transform:uppercase;cursor:pointer">
+          ✚ Ajouter une ligne ingrédient
+        </button>
+      </div>
       <div class="fsec">Préparation</div>
       <ul class="etapes">${etapes}</ul>
       <div class="fsec">Allergènes</div>
@@ -974,6 +982,7 @@ function applyMercLine(match, ing, tr, platId, ings, cfg) {
 }
 
 function showMercResults(input, resDiv, ing, tr, platId, ings, cfg) {
+  resDiv._inputRef = input; // pour positionner
   const q = normalizeStr(input.value);
 
   const matches = q.length < 1
@@ -1011,6 +1020,11 @@ function showMercResults(input, resDiv, ing, tr, platId, ings, cfg) {
       resDiv.appendChild(div);
     });
   }
+  // Positionner la liste sous le champ (position:fixed)
+  const inputRect = (resDiv._inputRef || resDiv.previousElementSibling || resDiv.parentElement).getBoundingClientRect();
+  resDiv.style.top  = (inputRect.bottom + window.scrollY + 2) + "px";
+  resDiv.style.left = Math.max(8, inputRect.left - 20) + "px";
+  resDiv.style.top  = (inputRect.bottom + 2) + "px"; // fixed = pas de scrollY
   resDiv.classList.add("open");
 }
 
@@ -1117,6 +1131,80 @@ function attachIngListeners(container, platId, ings, cfg, plat) {
 function eurFmt(n) {
   if (n == null || isNaN(n)) return "—";
   return parseFloat(n).toFixed(2).replace(".", ",") + " €";
+}
+
+
+function addIngLine(platId, btn) {
+  const fiche = btn.closest(".fiche");
+  const tbody = fiche.querySelector("#ing-body-" + platId);
+  if (!tbody) return;
+  const newId = Date.now();
+  const newIng = { _id: newId, nom: "", qte_brute: 0, unite: "g", perte_pct: 0, qte_nette: 0, prix_unitaire_ht: 0, total_ht: 0 };
+  if (!fichesIngs[platId]) fichesIngs[platId] = [];
+  fichesIngs[platId].push(newIng);
+  const ings = fichesIngs[platId];
+  const tr = document.createElement("tr");
+  tr.dataset.id = newId;
+  const opts = ["g","kg","ml","l","pce","botte","tranche"].map(o => `<option value="${o}"${o==="g"?" selected":""}>${o}</option>`).join("");
+  tr.innerHTML = `
+    <td style="position:relative;overflow:visible;padding:0">
+      <div class="merc-wrap2">
+        <span class="merc-badge ko" title="Recherchez un produit" data-badge></span>
+        <input class="merc-search" data-field="nom" value="" placeholder="Rechercher dans la mercuriale\u2026" autocomplete="off" spellcheck="false">
+        <div class="merc-results" id="merc-res-${newId}"></div>
+      </div>
+    </td>
+    <td><input class="ing-input" data-field="qte_brute" type="number" min="0" step="0.01" value="0"></td>
+    <td><select class="ing-select" data-field="unite">${opts}</select></td>
+    <td><input class="ing-input" data-field="perte_pct" type="number" min="0" max="100" step="1" value="0"></td>
+    <td><div class="cell-ro" data-qte-nette="${newId}">0</div></td>
+    <td><input class="ing-input" data-field="prix_kg" type="number" min="0" step="0.001" value="0.000" style="background:rgba(255,248,225,0.1)"></td>
+    <td><div class="cell-ro" data-prix-u="${newId}">\u2014</div></td>
+    <td><div class="cell-ro" data-total-ht="${newId}">\u2014</div></td>`;
+  tbody.appendChild(tr);
+  const cfg2 = { couverts: parseInt(document.getElementById("cfg-couverts").value)||1 };
+  attachSingleRow(tr, platId, newIng, ings, cfg2);
+  const inp = tr.querySelector(".merc-search");
+  if (inp) inp.focus();
+}
+
+function attachSingleRow(tr, platId, ing, ings, cfg) {
+  const si = tr.querySelector(".merc-search");
+  const rd = tr.querySelector(".merc-results");
+  if (si && rd) {
+    si.addEventListener("focus", () => showMercResults(si, rd, ing, tr, platId, ings, cfg));
+    si.addEventListener("input", () => { ing.nom = si.value; showMercResults(si, rd, ing, tr, platId, ings, cfg); });
+    si.addEventListener("blur",  () => setTimeout(() => rd.classList.remove("open"), 200));
+  }
+  const sel = tr.querySelector(".ing-select");
+  if (sel) sel.addEventListener("change", () => {
+    ing.unite = sel.value;
+    const pk = tr.querySelector("[data-field='prix_kg']");
+    if (pk) pk.value = prixKgVal(ing).toFixed(3);
+    fichesIngs[platId] = ings;
+  });
+  tr.addEventListener("input", e => {
+    const inp = e.target;
+    if (!inp.classList.contains("ing-input")) return;
+    const field = inp.dataset.field, val = inp.value;
+    ing[field] = val;
+    if (field === "prix_kg") {
+      const u=(ing.unite||"").toLowerCase(), v=parseFloat(val)||0;
+      ing.prix_unitaire_ht=(u==="pce"||u==="botte"||u==="tranche"||u==="kg"||u==="l"||u==="litre")?v:v/1000;
+    }
+    const b=parseFloat(ing.qte_brute)||0,d=parseFloat(ing.perte_pct)||0,p=parseFloat(ing.prix_unitaire_ht)||0;
+    ing.qte_nette=parseFloat((b*(1-d/100)).toFixed(2));
+    ing.total_ht=parseFloat((b*p).toFixed(3));
+    const qn=tr.querySelector("[data-qte-nette]"); if(qn)qn.textContent=ing.qte_nette;
+    const pu=tr.querySelector("[data-prix-u]");    if(pu)pu.textContent=eurFmt(ing.prix_unitaire_ht);
+    const th=tr.querySelector("[data-total-ht]");  if(th)th.textContent=eurFmt(ing.total_ht);
+    fichesIngs[platId]=ings;
+    const total=ings.reduce((s,i)=>s+(parseFloat(i.total_ht)||0),0);
+    const couvert=cfg.couverts>0?total/cfg.couverts:0;
+    const telHt=document.getElementById("total-ht-"+platId);    if(telHt)telHt.textContent=eurFmt(total);
+    const couEl=document.getElementById("cout-couvert-"+platId); if(couEl)couEl.textContent=eurFmt(couvert);
+    recalcPrixVente(platId);
+  });
 }
 
 function recalcPrixVente(platId) {
