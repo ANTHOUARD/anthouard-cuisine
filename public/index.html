@@ -908,10 +908,6 @@ function buildFicheHTML(plat, fiche, ings, cfg) {
         <div class="costs-grid">
           <div class="costs-left">
             <div class="cost-row">
-              <span class="clabel">Coût matière total HT</span>
-              <span class="cval" id="total-ht-${plat.id}">${eurFmt(totalHT)}</span>
-            </div>
-            <div class="cost-row">
               <span class="clabel">Coût / assiette HT</span>
               <span class="cval green" id="cout-couvert-${plat.id}">${eurFmt(coutCouvert)}</span>
             </div>
@@ -923,6 +919,10 @@ function buildFicheHTML(plat, fiche, ings, cfg) {
                   oninput="recalcPrixVente('${plat.id}')">
                 <span class="marge-pct">%</span>
               </div>
+            </div>
+            <div class="cost-row">
+              <span class="clabel">Marge brute HT</span>
+              <span class="cval" style="color:#f0a030" id="marge-brute-${plat.id}">${eurFmt(coutCouvert > 0 ? coutCouvert / (1 - 0.70) * 0.70 : 0)}</span>
             </div>
           </div>
           <div class="costs-right">
@@ -1288,6 +1288,10 @@ function recalcPrixVente(platId) {
 
   if (pvHtEl)  pvHtEl.textContent  = eurFmt(pvHT);
   if (pvTtcEl) pvTtcEl.textContent = eurFmt(pvTTC);
+
+  // Marge brute HT = PV HT - Coût assiette HT
+  const margeBruteEl = document.getElementById("marge-brute-" + platId);
+  if (margeBruteEl) margeBruteEl.textContent = eurFmt(pvHT - couvert);
 }
 
 // ─── EXPORT PDF ───────────────────────────────────────────────────────────────
