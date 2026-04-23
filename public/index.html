@@ -561,7 +561,8 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
       <div class="export-bar">
         <span class="export-lbl">Export</span>
         <button class="btn-green" onclick="imprimerPDF()">🖨 Exporter en PDF</button>
-        <button class="btn-blue" onclick="sauvegarderFiches()" style="font-size:11px">💾 Sauvegarder les fiches</button>
+        <button class="btn-blue" onclick="sauvegarderFiches()" style="font-size:11px" id="btn-save-fiches">💾 Sauvegarder les fiches</button>
+        <span id="save-modified-badge" style="display:none;font-size:10px;color:#f0a030;font-weight:bold">⚠ Modifications non sauvegardées</span>
         <button class="btn-outline" onclick="goStep(2)">← Retour carte</button>
         <button class="btn-outline" onclick="resetApp()">↺ Nouvelle carte</button>
       </div>
@@ -1256,6 +1257,7 @@ function attachIngListeners(container, platId, ings, cfg, plat) {
     if (telHt) telHt.textContent = eurFmt(total);
     if (couEl) couEl.textContent = eurFmt(couvert);
     recalcPrixVente(platId);
+    markModified();
   });
 
   tbody.addEventListener("change", e => {
@@ -1315,6 +1317,16 @@ function attachIngListeners(container, platId, ings, cfg, plat) {
   });
 }
 
+function markModified() {
+  const badge = document.getElementById("save-modified-badge");
+  if (badge) badge.style.display = "inline";
+}
+
+function clearModified() {
+  const badge = document.getElementById("save-modified-badge");
+  if (badge) badge.style.display = "none";
+}
+
 function eurFmt(n) {
   if (n == null || isNaN(n)) return "—";
   return parseFloat(n).toFixed(2).replace(".", ",") + " €";
@@ -1353,6 +1365,7 @@ function addIngLine(platId, btn) {
   attachSingleRow(tr, platId, newIng, ings, cfg2);
   const inp = tr.querySelector(".merc-search");
   if (inp) inp.focus();
+  markModified();
 }
 
 function attachSingleRow(tr, platId, ing, ings, cfg) {
@@ -1545,6 +1558,7 @@ async function sauvegarderFiches() {
   await saveBiblio(biblio);
   const msg = saved + " fiche" + (saved > 1 ? "s" : "") + " sauvegardée" + (saved > 1 ? "s" : "") + " ✓";
   // Afficher confirmation non-bloquante
+  clearModified();
   const exportLbl = document.querySelector(".export-lbl");
   if (exportLbl) {
     const old = exportLbl.innerHTML;
