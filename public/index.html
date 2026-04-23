@@ -708,7 +708,21 @@ function renderFiches(plats, cfg) {
       div.innerHTML = `<div class="fiche-head"><div><div class="fiche-nom">${esc(plat.nom)}</div><div class="fiche-cat">${esc(plat.categorie)}</div></div></div>
         <div class="fiche-body"><div class="err-box">Erreur de génération.${f.msg ? " " + f.msg : ""}</div></div>`;
     } else {
-      const ings = (f.ingredients || []).map((ing, i) => ({ ...ing, _id: i }));
+      const ings = (f.ingredients || []).map((ing, i) => {
+        const base = { ...ing, _id: i };
+        const u = (base.unite || "").toLowerCase();
+        const prixU = parseFloat(base.prix_unitaire_ht) || 0;
+        // Normaliser prix_unitaire_ht : l'IA donne parfois le prix au kg plutôt qu'à l'unité
+        // On recalcule toujours depuis prix_unitaire_ht tel que fourni par l'IA
+        // et on s'assure que total_ht est cohérent
+        const b = parseFloat(base.qte_brute) || 0;
+        const d = parseFloat(base.perte_pct) || 0;
+        base.qte_nette = parseFloat((b * (1 - d / 100)).toFixed(2));
+        // Si prix_unitaire_ht semble être un prix au kg (>1 pour du g), corriger
+        // Sinon garder tel quel
+        base.total_ht = parseFloat((b * prixU).toFixed(3));
+        return base;
+      });
       fichesIngs[plat.id] = ings;
       div.innerHTML = buildFicheHTML(plat, f, ings, cfg);
       attachIngListeners(div, plat.id, ings, cfg, plat);
@@ -778,10 +792,15 @@ function buildFicheHTML(plat, fiche, ings, cfg) {
 
 function prixKgVal(ing) {
   const u = (ing.unite || "").toLowerCase();
-  const p = parseFloat(ing.prix_unitaire_ht || 0);
-  if (u === "pce" || u === "botte" || u === "tranche") return p;       // prix direct à l'unité
-  if (u === "kg" || u === "l" || u === "litre") return p;              // prix direct au kg/L
-  return p * 1000;  // g ou ml → ×1000 pour obtenir le prix au kg/L
+  // Calculer prix_unitaire_ht depuis total_ht/qte_brute si prix_unitaire_ht semble nul
+  let p = parseFloat(ing.prix_unitaire_ht) || 0;
+  if (p === 0 && parseFloat(ing.total_ht) > 0 && parseFloat(ing.qte_brute) > 0) {
+    p = parseFloat(ing.total_ht) / parseFloat(ing.qte_brute);
+    ing.prix_unitaire_ht = p; // corriger en place
+  }
+  if (u === "pce" || u === "botte" || u === "tranche") return p;
+  if (u === "kg" || u === "l" || u === "litre") return p;
+  return p * 1000;
 }
 
 function uniteLabel(u) {
@@ -804,7 +823,7 @@ function prixColLabel(unite) {
 }
 
 function ingRow(ing) {
-  const pkv = prixKgVal(ing);
+  const pkv = prixKgVal(ing); // cet appel peut corriger ing.prix_unitaire_ht si nécessaire
   const u = uniteLabel(ing.unite);
   const unites = ["g","kg","ml","l","pce","botte","tranche"];
   const opts = unites.map(opt => `<option value="${opt}"${u===opt?" selected":""}>${opt}</option>`).join("");
