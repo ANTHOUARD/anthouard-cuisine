@@ -1529,9 +1529,12 @@ async function sauvegarderFiches() {
   const biblio = await loadBiblio();
   let saved = 0;
 
+  console.log("=== SAUVEGARDE ===");
+  console.log("fichesIngs keys:", Object.keys(fichesIngs));
   plats.forEach(plat => {
     const fiche = fiches[plat.id];
     const ings  = fichesIngs[String(plat.id)];
+    console.log("Plat:", plat.nom, "id:", plat.id, "ings count:", ings ? ings.length : "null");
     if (!fiche || fiche.error) return;
 
     // Vérifier si une fiche avec le même nom existe déjà
