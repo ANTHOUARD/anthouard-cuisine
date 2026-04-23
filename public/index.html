@@ -287,18 +287,23 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 }
 
 /* ── DROPDOWN MERCURIALE ── */
-.merc-wrap2 { position: relative; width: 100%; }
-.merc-search { width: 100%; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 7px 22px 7px 8px; cursor: text; display: block; }
-.merc-search:focus { background: rgba(74,122,207,0.12); }
-.merc-results { position: absolute; top: 100%; left: -1px; right: -1px; z-index: 9999; background: #1e1e1e; border: 2px solid #9b2335; max-height: 240px; overflow-y: auto; box-shadow: 0 6px 20px rgba(0,0,0,0.8); display: none; }
+.merc-wrap2 { position: relative; width: 100%; display: flex; align-items: center; gap: 6px; padding: 4px 6px; }
+.merc-badge { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; cursor: help; }
+.merc-badge.ok  { background: #4caf50; box-shadow: 0 0 5px #4caf50; }
+.merc-badge.ko  { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; }
+.merc-search { flex: 1; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 3px 0; cursor: text; min-width: 0; }
+.merc-search:focus { background: transparent; }
+.merc-results { position: absolute; top: calc(100% + 2px); left: 0; right: 0; z-index: 9999; background: #181818; border: 2px solid #9b2335; max-height: 260px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.9); display: none; border-radius: 2px; }
 .merc-results.open { display: block; }
-.merc-item { padding: 7px 10px; cursor: pointer; border-bottom: 1px solid #2a2a2a; font-size: 11px; line-height: 1.4; }
-.merc-item:hover, .merc-item.active { background: rgba(74,122,207,0.25); }
-.merc-item-nom { color: #fff; font-weight: bold; }
-.merc-item-detail { color: #888; font-size: 10px; margin-top: 2px; }
-.merc-item-prix { color: #7ec8a0; font-weight: bold; }
-.merc-item-none { padding: 8px 10px; color: #666; font-size: 11px; font-style: italic; }
-@media print { .merc-results { display: none !important; } .merc-search { background: transparent !important; font-size: 10px !important; } }
+.merc-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #2a2a2a; }
+.merc-item:last-child { border-bottom: none; }
+.merc-item:hover { background: #2a2a2a; }
+.merc-item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.merc-item-nom { color: #fff; font-weight: bold; font-size: 12px; }
+.merc-item-prix { color: #7ec8a0; font-weight: bold; font-size: 12px; white-space: nowrap; }
+.merc-item-detail { color: #777; font-size: 10px; margin-top: 2px; }
+.merc-item-none { padding: 10px 12px; color: #666; font-size: 11px; font-style: italic; text-align: center; }
+@media print { .merc-results { display: none !important; } .merc-badge.ok { background: #4caf50 !important; } .merc-badge.ko { background: #e74c3c !important; } }
 </style>
 </head>
 <body>
@@ -909,16 +914,16 @@ function ingRow(ing) {
   const u = uniteLabel(ing.unite);
   const unites = ["g","kg","ml","l","pce","botte","tranche"];
   const opts = unites.map(opt => `<option value="${opt}"${u===opt?" selected":""}>${opt}</option>`).join("");
-  const mercBadge = ing._merc
-    ? `<span title="${esc(ing._merc)}" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#4caf50;font-size:10px;cursor:help">✓</span>`
-    : `<span title="Hors mercuriale" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);color:#e74c3c;font-size:10px;cursor:help">⚠</span>`;
+  const badgeCls = ing._merc ? "merc-badge ok" : "merc-badge ko";
+  const badgeTip = ing._merc ? esc(ing._merc) : "Hors mercuriale — cliquez pour rechercher";
   return `<tr data-id="${ing._id}">
-    <td style="position:relative;overflow:visible">
-      <div class="merc-wrap2" data-ingid="${ing._id}">
-        <input class="merc-search" data-field="nom" placeholder="${esc(ing.nom || 'Rechercher...')}" value="${esc(ing.nom || '')}" autocomplete="off">
+    <td style="position:relative;overflow:visible;padding:0">
+      <div class="merc-wrap2">
+        <span class="${badgeCls}" title="${badgeTip}" data-badge></span>
+        <input class="merc-search" data-field="nom" value="${esc(ing.nom || '')}" 
+               placeholder="Rechercher dans la mercuriale…" autocomplete="off" spellcheck="false">
         <div class="merc-results" id="merc-res-${ing._id}"></div>
       </div>
-      ${mercBadge}
     </td>
     <td><input class="ing-input" data-field="qte_brute" type="number" min="0" step="0.01" value="${ing.qte_brute || 0}"></td>
     <td><select class="ing-select" data-field="unite">${opts}</select></td>
@@ -968,34 +973,40 @@ function applyMercLine(match, ing, tr, platId, ings, cfg) {
   recalcPrixVente(platId);
 }
 
-function showMercResults(input, resDiv, ingId, ing, tr, platId, ings, cfg) {
+function showMercResults(input, resDiv, ing, tr, platId, ings, cfg) {
   const q = normalizeStr(input.value);
-  resDiv.innerHTML = "";
 
-  // Filtrer la mercuriale selon la saisie
   const matches = q.length < 1
-    ? MERCURIALE_ACTIVE.slice(0, 40)  // afficher les 40 premiers si vide
+    ? MERCURIALE_ACTIVE.slice(0, 50)
     : MERCURIALE_ACTIVE.filter(p =>
         p.nom_lower.includes(q) ||
         normalizeStr(p.fournisseur).includes(q) ||
         normalizeStr(p.famille).includes(q)
-      ).slice(0, 40);
+      ).slice(0, 50);
 
+  resDiv.innerHTML = "";
   if (!matches.length) {
-    resDiv.innerHTML = '<div class="merc-item-none">Aucun produit trouvé — prix à saisir manuellement</div>';
+    resDiv.innerHTML = '<div class="merc-item-none">Aucun produit trouvé — saisissez le prix manuellement</div>';
   } else {
     matches.forEach(match => {
       const div = document.createElement("div");
       div.className = "merc-item";
-      const prixLabel = match.prix_achat + " €/" + match.unite;
-      div.innerHTML = `<div class="merc-item-nom">${esc(match.nom)}</div>
-        <div class="merc-item-detail">${esc(match.famille)} · ${esc(match.fournisseur)} · <span class="merc-item-prix">${prixLabel}</span></div>`;
+      const prixLabel = parseFloat(match.prix_achat).toFixed(2) + " €/" + match.unite;
+      div.innerHTML =
+        `<div class="merc-item-top"><span class="merc-item-nom">${esc(match.nom)}</span><span class="merc-item-prix">${prixLabel}</span></div>` +
+        `<div class="merc-item-detail">${esc(match.fournisseur)} · ${esc(match.famille)} · Code: ${esc(match.code)}</div>`;
       div.addEventListener("mousedown", e => {
         e.preventDefault();
         input.value = match.nom;
         ing.nom = match.nom;
         resDiv.classList.remove("open");
         applyMercLine(match, ing, tr, platId, ings, cfg);
+        // Mettre à jour la pastille
+        const badge = tr.querySelector("[data-badge]");
+        if (badge) {
+          badge.className = "merc-badge ok";
+          badge.title = match.nom + " · " + match.fournisseur + " · " + parseFloat(match.prix_achat).toFixed(2) + " €/" + match.unite;
+        }
       });
       resDiv.appendChild(div);
     });
@@ -1015,7 +1026,7 @@ function attachIngListeners(container, platId, ings, cfg, plat) {
     const ing = ings.find(i => i._id === id);
     if (!ing) return;
     const resDiv = tr.querySelector(".merc-results");
-    showMercResults(e.target, resDiv, id, ing, tr, platId, ings, cfg);
+    showMercResults(e.target, resDiv, ing, tr, platId, ings, cfg);
   }, true);
 
   tbody.addEventListener("input", e => {
@@ -1026,7 +1037,7 @@ function attachIngListeners(container, platId, ings, cfg, plat) {
     if (!ing) return;
     ing.nom = e.target.value;
     const resDiv = tr.querySelector(".merc-results");
-    showMercResults(e.target, resDiv, id, ing, tr, platId, ings, cfg);
+    showMercResults(e.target, resDiv, ing, tr, platId, ings, cfg);
   });
 
   tbody.addEventListener("blur", e => {
