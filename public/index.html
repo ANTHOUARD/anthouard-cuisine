@@ -1436,22 +1436,25 @@ function resetApp() {
 const BIBLIO_KEY = "anthouard_biblio_v2";
 
 async function loadBiblio() {
-  try {
-    const r = await window.storage.get(BIBLIO_KEY, true); // shared=true
-    return r ? JSON.parse(r.value) : [];
-  } catch(e) {
-    // Fallback localStorage si window.storage non dispo
-    try { return JSON.parse(localStorage.getItem(BIBLIO_KEY) || "[]"); }
-    catch(e2) { return []; }
+  // Essayer window.storage (partagé entre utilisateurs) en premier
+  if (typeof window !== "undefined" && window.storage) {
+    try {
+      const r = await window.storage.get(BIBLIO_KEY, true);
+      if (r && r.value) return JSON.parse(r.value);
+    } catch(e) { /* fallback */ }
   }
+  // Fallback localStorage (local au navigateur)
+  try { return JSON.parse(localStorage.getItem(BIBLIO_KEY) || "[]"); }
+  catch(e) { return []; }
 }
 
 async function saveBiblio(data) {
-  try {
-    await window.storage.set(BIBLIO_KEY, JSON.stringify(data), true); // shared=true
-  } catch(e) {
-    // Fallback localStorage
-    localStorage.setItem(BIBLIO_KEY, JSON.stringify(data));
+  const json = JSON.stringify(data);
+  // Toujours sauvegarder en localStorage (fiable)
+  try { localStorage.setItem(BIBLIO_KEY, json); } catch(e) {}
+  // Essayer aussi window.storage (partagé)
+  if (typeof window !== "undefined" && window.storage) {
+    try { await window.storage.set(BIBLIO_KEY, json, true); } catch(e) {}
   }
 }
 
@@ -1519,8 +1522,6 @@ async function renderBiblio() {
   if (grid) grid.innerHTML = '<div class="biblio-loading">Chargement…</div>';
   const biblio = await loadBiblio();
   const q = (document.getElementById("biblio-search")?.value || "").toLowerCase().trim();
-  const grid = document.getElementById("biblio-grid");
-  const countEl = document.getElementById("biblio-count");
   if (!grid) return;
 
   const filtered = biblio.filter(f => {
@@ -1623,7 +1624,6 @@ async function ouvrirFiche(ficheId) {
 }
 
 async function supprimerFiche(ficheId) {
-  if (!confirm("Supprimer cette fiche ?")) return;
   if (!confirm("Supprimer cette fiche de la bibliothèque ?")) return;
   const biblio = (await loadBiblio()).filter(f => f.id !== ficheId);
   await saveBiblio(biblio);
