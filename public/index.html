@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -174,7 +175,7 @@ body { background: var(--bg); color: var(--text); font-family: Arial, Helvetica,
 .fsec:first-child { margin-top: 0; }
 .edit-hint { font-size: 10px; color: var(--text3); margin-bottom: 8px; font-style: italic; }
 
-table.ing { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; }
+table.ing { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; table-layout: fixed; }
 table.ing thead, table.ing tbody, table.ing tr { display: table; width: 100%; table-layout: fixed; }
 table.ing th { text-align: left; padding: 7px 8px; font-size: 9px; font-weight: bold; text-transform: uppercase; color: var(--text2); background: var(--bg3); border: 1px solid var(--border); white-space: nowrap; }
 table.ing th.r { text-align: right; }
@@ -369,7 +370,7 @@ table.ing tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 .merc-badge { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; cursor: help; }
 .merc-badge.ok  { background: #4caf50; box-shadow: 0 0 5px #4caf50; }
 .merc-badge.ko  { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; }
-.merc-search { flex: 1; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 3px 0; cursor: text; min-width: 0; }
+.merc-search { flex: 1; background: transparent; border: none; outline: none; font-family: Arial,sans-serif; font-size: 12px; color: var(--text); padding: 3px 0; cursor: text; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .merc-search:focus { background: transparent; }
 .merc-results { position: fixed; z-index: 9999; background: #181818; border: 2px solid #9b2335; max-height: 340px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.95); display: none; border-radius: 3px; min-width: 600px; max-width: 900px; }
 .merc-results.open { display: block; }
@@ -995,8 +996,7 @@ function buildFicheHTML(plat, fiche, ings, cfg) {
           <th class="r" style="width:12%">Prix/kg ou L (€)</th>
           <th class="r" style="width:11%">Prix U. HT (€/u)</th>
           <th class="r" style="width:10%">Total HT</th>
-          <th class="no-print" style="width:4%;text-align:center"></th>
-          <th style="width:4%;text-align:center" class="no-print">✕</th>
+          <th class="no-print" style="width:5%;text-align:center">✕</th>
         </tr></thead>
         <tbody id="ing-body-${plat.id}">
           ${ings.map(ing => ingRow(ing)).join("")}
@@ -1091,7 +1091,7 @@ function ingRow(ing) {
   const badgeCls = ing._merc ? "merc-badge ok" : "merc-badge ko";
   const badgeTip = ing._merc ? esc(ing._merc) : "Hors mercuriale — cliquez pour rechercher";
   return `<tr data-id="${ing._id}">
-    <td style="position:relative;overflow:visible;padding:0">
+    <td style="position:relative;overflow:visible;padding:0;max-width:0">
       <div class="merc-wrap2">
         <span class="${badgeCls}" title="${badgeTip}" data-badge></span>
         <input class="merc-search" data-field="nom" value="${esc(ing.nom || '')}" 
@@ -1332,7 +1332,7 @@ function clearModified() {
 
 function eurFmt(n) {
   if (n == null || isNaN(n)) return "—";
-  return parseFloat(n).toFixed(2).replace(".", ",") + " €";
+  return parseFloat(n).toFixed(2).replace(".", ",") + " €";
 }
 
 
@@ -1350,7 +1350,7 @@ function addIngLine(platId, btn) {
   tr.dataset.id = newId;
   const opts = ["g","kg","ml","l","pce","botte","tranche"].map(o => `<option value="${o}"${o==="g"?" selected":""}>${o}</option>`).join("");
   tr.innerHTML = `
-    <td style="position:relative;overflow:visible;padding:0">
+    <td style="position:relative;overflow:visible;padding:0;max-width:0">
       <div class="merc-wrap2">
         <span class="merc-badge ko" title="Recherchez un produit" data-badge></span>
         <input class="merc-search" data-field="nom" value="" placeholder="Rechercher dans la mercuriale\u2026" autocomplete="off" spellcheck="false">
