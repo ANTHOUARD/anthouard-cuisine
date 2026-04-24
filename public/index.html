@@ -177,6 +177,7 @@ body { background: var(--bg); color: var(--text); font-family: Arial, Helvetica,
 
 table.ing { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; table-layout: fixed; }
 table.ing thead, table.ing tbody, table.ing tr { display: table; width: 100%; table-layout: fixed; }
+table.ing tbody tr { display: table-row; }
 table.ing th { text-align: left; padding: 7px 8px; font-size: 9px; font-weight: bold; text-transform: uppercase; color: var(--text2); background: var(--bg3); border: 1px solid var(--border); white-space: nowrap; }
 table.ing th.r { text-align: right; }
 table.ing td { border: 1px solid #2a2a2a; vertical-align: middle; padding: 0; }
@@ -1349,11 +1350,14 @@ function addIngLine(platId, btn) {
   const tr = document.createElement("tr");
   tr.dataset.id = newId;
   const opts = ["g","kg","ml","l","pce","botte","tranche"].map(o => `<option value="${o}"${o==="g"?" selected":""}>${o}</option>`).join("");
+  tr.style.display = "table";
+  tr.style.width = "100%";
+  tr.style.tableLayout = "fixed";
   tr.innerHTML = `
     <td style="position:relative;overflow:visible;padding:0;max-width:0">
       <div class="merc-wrap2">
         <span class="merc-badge ko" title="Recherchez un produit" data-badge></span>
-        <input class="merc-search" data-field="nom" value="" placeholder="Rechercher dans la mercuriale\u2026" autocomplete="off" spellcheck="false">
+        <input class="merc-search" data-field="nom" value="" placeholder="Rechercher dans la mercuriale…" autocomplete="off" spellcheck="false">
         <div class="merc-results" id="merc-res-${newId}"></div>
       </div>
     </td>
@@ -1362,8 +1366,11 @@ function addIngLine(platId, btn) {
     <td><input class="ing-input" data-field="perte_pct" type="number" min="0" max="100" step="1" value="0"></td>
     <td><div class="cell-ro" data-qte-nette="${newId}">0</div></td>
     <td><input class="ing-input" data-field="prix_kg" type="number" min="0" step="0.001" value="0.000" style="background:rgba(255,248,225,0.1)"></td>
-    <td><div class="cell-ro" data-prix-u="${newId}">\u2014</div></td>
-    <td><div class="cell-ro" data-total-ht="${newId}">\u2014</div></td>`;
+    <td><div class="cell-ro" data-prix-u="${newId}">—</div></td>
+    <td><div class="cell-ro" data-total-ht="${newId}">—</div></td>
+    <td class="no-print" style="text-align:center;padding:0;vertical-align:middle">
+      <button class="btn-del-line" data-del-id="${newId}" title="Supprimer">✕</button>
+    </td>`;
   tbody.appendChild(tr);
   const cfg2 = { couverts: parseInt(document.getElementById("cfg-couverts").value)||1 };
   attachSingleRow(tr, platId, newIng, ings, cfg2);
