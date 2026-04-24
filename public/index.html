@@ -1350,25 +1350,22 @@ function addIngLine(platId, btn) {
   const tr = document.createElement("tr");
   tr.dataset.id = newId;
   const opts = ["g","kg","ml","l","pce","botte","tranche"].map(o => `<option value="${o}"${o==="g"?" selected":""}>${o}</option>`).join("");
-  tr.style.display = "table";
-  tr.style.width = "100%";
-  tr.style.tableLayout = "fixed";
   tr.innerHTML = `
-    <td style="position:relative;overflow:visible;padding:0;max-width:0">
+    <td style="position:relative;overflow:visible;padding:0;width:21%">
       <div class="merc-wrap2">
         <span class="merc-badge ko" title="Recherchez un produit" data-badge></span>
         <input class="merc-search" data-field="nom" value="" placeholder="Rechercher dans la mercuriale…" autocomplete="off" spellcheck="false">
         <div class="merc-results" id="merc-res-${newId}"></div>
       </div>
     </td>
-    <td><input class="ing-input" data-field="qte_brute" type="number" min="0" step="0.01" value="0"></td>
-    <td><select class="ing-select" data-field="unite">${opts}</select></td>
-    <td><input class="ing-input" data-field="perte_pct" type="number" min="0" max="100" step="1" value="0"></td>
-    <td><div class="cell-ro" data-qte-nette="${newId}">0</div></td>
-    <td><input class="ing-input" data-field="prix_kg" type="number" min="0" step="0.001" value="0.000" style="background:rgba(255,248,225,0.1)"></td>
-    <td><div class="cell-ro" data-prix-u="${newId}">—</div></td>
-    <td><div class="cell-ro" data-total-ht="${newId}">—</div></td>
-    <td class="no-print" style="text-align:center;padding:0;vertical-align:middle">
+    <td style="width:9%"><input class="ing-input" data-field="qte_brute" type="number" min="0" step="0.01" value="0"></td>
+    <td style="width:6%"><select class="ing-select" data-field="unite">${opts}</select></td>
+    <td style="width:7%"><input class="ing-input" data-field="perte_pct" type="number" min="0" max="100" step="1" value="0"></td>
+    <td style="width:9%"><div class="cell-ro" data-qte-nette="${newId}">0</div></td>
+    <td style="width:12%"><input class="ing-input" data-field="prix_kg" type="number" min="0" step="0.001" value="0.000" style="background:rgba(255,248,225,0.1)"></td>
+    <td style="width:11%"><div class="cell-ro" data-prix-u="${newId}">—</div></td>
+    <td style="width:10%"><div class="cell-ro" data-total-ht="${newId}">—</div></td>
+    <td class="no-print" style="width:5%;text-align:center;padding:0;vertical-align:middle">
       <button class="btn-del-line" data-del-id="${newId}" title="Supprimer">✕</button>
     </td>`;
   tbody.appendChild(tr);
