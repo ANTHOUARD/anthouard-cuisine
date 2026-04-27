@@ -828,7 +828,7 @@ function setStatus(id, status) {
 }
 function removePlat(id) {
   sauvegarderHistorique();
-  carte = carte.filter(p => p.id !== id);
+  carte = carte.filter(p => String(p.id) !== String(id));
   renderCarte();
 }
 
