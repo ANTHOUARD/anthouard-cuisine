@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -906,9 +907,23 @@ async function genererFiches() {
   document.getElementById("fiches-loader").style.display = "flex";
   document.getElementById("fiches-container").innerHTML = "";
 
+  // Charger la bibliothèque pour éviter de régénérer les fiches déjà sauvegardées
+  const biblio = await loadBiblio();
+
   for (let i = 0; i < plats.length; i++) {
     const plat = plats[i];
     document.getElementById("fiches-loader-txt").textContent = `Fiche ${i + 1}/${plats.length} — ${plat.nom}…`;
+
+    // Vérifier si la fiche existe déjà en bibliothèque
+    const existante = biblio.find(f => f.nom.toLowerCase() === plat.nom.toLowerCase());
+    if (existante) {
+      // Utiliser la version sauvegardée — ne pas régénérer
+      document.getElementById("fiches-loader-txt").textContent = `Fiche ${i + 1}/${plats.length} — ${plat.nom} (bibliothèque)`;
+      fiches[String(plat.id)] = existante.fiche;
+      fichesIngs[String(plat.id)] = JSON.parse(JSON.stringify(existante.ings));
+      plat._biblioId = existante.id;
+      continue;
+    }
 
     const prompt =
       "Tu es chef cuisinier expert. Fiche technique pour : " + plat.nom +
@@ -923,9 +938,9 @@ async function genererFiches() {
 
     try {
       const raw = await callClaude([{ role: "user", content: prompt }], 2000);
-      fiches[plat.id] = parseJsonSafe(raw) || { error: true };
+      fiches[String(plat.id)] = parseJsonSafe(raw) || { error: true };
     } catch (e) {
-      fiches[plat.id] = { error: true, msg: e.message };
+      fiches[String(plat.id)] = { error: true, msg: e.message };
     }
   }
 
@@ -1332,7 +1347,7 @@ function clearModified() {
 
 function eurFmt(n) {
   if (n == null || isNaN(n)) return "—";
-  return parseFloat(n).toFixed(2).replace(".", ",") + " €";
+  return parseFloat(n).toFixed(2).replace(".", ",") + " €";
 }
 
 
