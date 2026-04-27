@@ -865,7 +865,8 @@ function renderCarte() {
           <button class="br" onclick="removePlat(${plat.id})">✕ Supprimer</button>`;
       } else if (plat.status === "validated") {
         html += `<span class="badge-v">✓ Validé</span>
-          <button class="br" onclick="setStatus(${plat.id},'rejected')">Retirer</button>`;
+          <button class="br" onclick="setStatus(${plat.id},'rejected')">Retirer</button>
+          <button class="br" onclick="removePlat(${plat.id})" style="opacity:0.6" title="Supprimer définitivement">✕</button>`;
       } else if (plat.status === "rejected") {
         html += `<span class="badge-r">✗ Retiré</span>
           <button class="bv" onclick="setStatus(${plat.id},'validated')">Remettre</button>`;
